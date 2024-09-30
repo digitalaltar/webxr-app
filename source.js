@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory';
 
 let scene, camera, renderer, controls;
 let albumCovers = [];
@@ -10,7 +9,7 @@ let gazeTimer = null;
 const gazeDuration = 2000; // 2 seconds of gaze to trigger interaction
 
 const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-const useWebXR = !!navigator.xr;
+let gyroscope; // To store the gyroscope instance
 
 // Initialize the scene
 function init() {
@@ -23,7 +22,6 @@ function init() {
   // Setup renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.xr.enabled = useWebXR;  // Enable WebXR for immersive experiences
   document.body.appendChild(renderer.domElement);
 
   // Add lighting
@@ -45,10 +43,12 @@ function init() {
   createAlbumCovers();
 
   // Setup controls based on device type
-  if (useWebXR && isMobile) {
-    setupWebXRInline();
+  if (isMobile) {
+    startGyroscopeControls(); // Use the gyroscope on mobile
   } else {
-    setupControls(); // Use OrbitControls for both mobile and desktop
+    controls = new OrbitControls(camera, renderer.domElement); // OrbitControls on desktop
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.1;
   }
 
   // Start the animation loop
@@ -74,35 +74,28 @@ function createAlbumCovers() {
   albumCovers.push(cover1, cover2, cover3);
 }
 
-// Controls for both desktop and mobile
-function setupControls() {
-  controls = new OrbitControls(camera, renderer.domElement);
+// Gyroscope-based control for mobile
+function startGyroscopeControls() {
+  if ('Gyroscope' in window) {
+    gyroscope = new Gyroscope({ frequency: 60 });
+    
+    gyroscope.addEventListener('reading', () => {
+      const alpha = gyroscope.z || 0; // Z-axis (yaw)
+      const beta = gyroscope.x || 0;  // X-axis (pitch)
+      const gamma = gyroscope.y || 0; // Y-axis (roll)
 
-  // Enable touch gestures (rotate, pan, zoom)
-  controls.enableZoom = true;  // Allow pinch-to-zoom
-  controls.enableRotate = true;  // Allow swipe/drag to rotate
-  controls.enablePan = false;  // Disable panning (optional, can enable if needed)
-  controls.dampingFactor = 0.1;
-  controls.enableDamping = true;
-
-  // Set constraints
-  controls.minDistance = 1;  // Minimum zoom distance
-  controls.maxDistance = 1000;  // Maximum zoom distance
-
-  console.log("OrbitControls initialized:", controls); // Log controls object
-}
-
-// WebXR setup for inline mode (non-immersive)
-function setupWebXRInline() {
-  navigator.xr.requestSession('inline').then((session) => {
-    session.requestReferenceSpace('viewer').then((refSpace) => {
-      renderer.xr.setReferenceSpaceType('local');
-      renderer.xr.setSession(session);
-      renderer.xr.setAnimationLoop(() => {
-        renderer.render(scene, camera);
-      });
+      // Update camera orientation based on gyroscope data
+      camera.rotation.set(
+        THREE.MathUtils.degToRad(beta),    // Convert degrees to radians
+        THREE.MathUtils.degToRad(alpha),
+        THREE.MathUtils.degToRad(gamma)
+      );
     });
-  });
+
+    gyroscope.start();
+  } else {
+    console.log('Gyroscope API not supported on this device.');
+  }
 }
 
 // Detect gaze or mouse pointer interactions
@@ -139,8 +132,8 @@ function triggerInteraction(cover) {
 function animate() {
   requestAnimationFrame(animate);
 
-  if (controls) {
-    controls.update(); // Update OrbitControls
+  if (!isMobile && controls) {
+    controls.update(); // Update OrbitControls on desktop
   }
 
   detectGaze(); // Detect gaze or pointer interaction
@@ -156,5 +149,3 @@ window.addEventListener('resize', () => {
 
 // Initialize the scene
 init();
-
-console.log("Version 0.0.1d");
