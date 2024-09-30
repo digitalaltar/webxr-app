@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory';
 
-// Global variables
 let scene, camera, renderer, controls;
 let albumCovers = [];
 let raycaster = new THREE.Raycaster();
@@ -23,6 +23,7 @@ function init() {
   // Setup renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.xr.enabled = useWebXR;  // Enable WebXR for immersive experiences
   document.body.appendChild(renderer.domElement);
 
   // Add lighting
@@ -44,12 +45,10 @@ function init() {
   createAlbumCovers();
 
   // Setup controls based on device type
-  if (isMobile && useWebXR) {
-    setupWebXRInline(); // Use WebXR on mobile if available
-  } else if (isMobile && !useWebXR) {
-    setupDeviceOrientationControls(); // Fallback to DeviceOrientation API on mobile
+  if (useWebXR && isMobile) {
+    setupWebXRInline();
   } else {
-    setupDesktopControls(); // Use OrbitControls on desktop
+    setupControls(); // Use OrbitControls for both mobile and desktop
   }
 
   // Start the animation loop
@@ -75,14 +74,22 @@ function createAlbumCovers() {
   albumCovers.push(cover1, cover2, cover3);
 }
 
-// Desktop controls using OrbitControls
-function setupDesktopControls() {
+// Controls for both desktop and mobile
+function setupControls() {
   controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;  // Add damping for smooth motion
-  controls.dampingFactor = 0.05;
-  controls.screenSpacePanning = false;  // Prevent camera from panning in 2D space
-  controls.minDistance = 1;  // Set minimum zoom distance
-  controls.maxDistance = 1000;  // Set maximum zoom distance
+
+  // Enable touch gestures (rotate, pan, zoom)
+  controls.enableZoom = true;  // Allow pinch-to-zoom
+  controls.enableRotate = true;  // Allow swipe/drag to rotate
+  controls.enablePan = false;  // Disable panning (optional, can enable if needed)
+  controls.dampingFactor = 0.1;
+  controls.enableDamping = true;
+
+  // Set constraints
+  controls.minDistance = 1;  // Minimum zoom distance
+  controls.maxDistance = 1000;  // Maximum zoom distance
+
+  console.log("OrbitControls initialized:", controls); // Log controls object
 }
 
 // WebXR setup for inline mode (non-immersive)
@@ -96,20 +103,6 @@ function setupWebXRInline() {
       });
     });
   });
-}
-
-// Fallback for DeviceOrientation API if WebXR is not available
-function setupDeviceOrientationControls() {
-  if (window.DeviceOrientationEvent) {
-    window.addEventListener('deviceorientation', (event) => {
-      const alpha = event.alpha ? THREE.MathUtils.degToRad(event.alpha) : 0; // Z-axis (yaw)
-      const beta = event.beta ? THREE.MathUtils.degToRad(event.beta) : 0; // X-axis (pitch)
-      const gamma = event.gamma ? THREE.MathUtils.degToRad(event.gamma) : 0; // Y-axis (roll)
-      camera.rotation.set(beta, alpha, gamma); // Apply rotation to camera
-    }, true);
-  } else {
-    console.warn('DeviceOrientation API not supported.');
-  }
 }
 
 // Detect gaze or mouse pointer interactions
@@ -146,8 +139,8 @@ function triggerInteraction(cover) {
 function animate() {
   requestAnimationFrame(animate);
 
-  if (!isMobile && controls) {
-    controls.update(); // Update OrbitControls on desktop
+  if (controls) {
+    controls.update(); // Update OrbitControls
   }
 
   detectGaze(); // Detect gaze or pointer interaction
@@ -164,3 +157,4 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
+console.log("Version 0.0.1d");
