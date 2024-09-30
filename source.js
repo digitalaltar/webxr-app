@@ -163,3 +163,4 @@ window.addEventListener('resize', () => {
 
 // Initialize the scene
 init();
+
