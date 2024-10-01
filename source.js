@@ -1,9 +1,11 @@
+// Imports
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { VRButton } from 'three/examples/jsm/webxr/VRButton';
 import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory'; // Keep this for future VR
 import { createNoise2D } from 'simplex-noise';  // Use named export
 
+// Variables
 let scene, camera, renderer, controls;
 let albumCovers = [];
 let raycaster = new THREE.Raycaster();
@@ -17,6 +19,7 @@ let cloudOpacities = [];
 // Simplex noise for organic movement
 const noise2D = createNoise2D();  // Create the noise generator
 
+// Gaze
 const gazeDuration = 2000; // 2 seconds of gaze to trigger interaction
 
 // Initialize the scene
@@ -187,8 +190,8 @@ function setupDesktopControls() {
   controls.enableDamping = true;
   controls.dampingFactor = 0.1;
   controls.screenSpacePanning = false;  // Prevent panning
-  controls.minDistance = 0.5;  // Set minimum zoom distance
-  controls.maxDistance = 1000;  // Set maximum zoom distance
+  controls.minDistance = 1;  // Set minimum zoom distance
+  controls.maxDistance = 40;  // Set maximum zoom distance
 }
 
 // Detect gaze or mouse pointer interactions
@@ -221,11 +224,15 @@ function triggerInteraction(cover) {
   console.log(`Focused on ${cover.name}`);
 }
 
+// Animate
 function animate() {
   requestAnimationFrame(animate);
 
   const positions = clouds.geometry.attributes.position.array;
   const time = performance.now() * 0.001;  // Time variable for smooth transitions
+
+  const maxDistance = 50;   // Maximum distance clouds can drift before being pulled back
+  const attractionStrength = 0.005; // How strongly to pull clouds back to the center
 
   // Move each cloud point based on its velocity and noise for organic movement
   for (let i = 0; i < positions.length; i += 3) {
@@ -238,6 +245,19 @@ function animate() {
     positions[i] += cloudVelocities[i / 3].x + noiseX;  // X axis
     positions[i + 1] += cloudVelocities[i / 3].y + noiseY;  // Y axis
     positions[i + 2] += cloudVelocities[i / 3].z + noiseZ;  // Z axis
+
+    // Softly attract clouds back to the center if they drift too far (to prevent them from spreading too much)
+    const distanceFromCenter = Math.sqrt(positions[i]**2 + positions[i+1]**2 + positions[i+2]**2);
+    if (distanceFromCenter > maxDistance) {
+      const directionToCenterX = -positions[i] / distanceFromCenter;
+      const directionToCenterY = -positions[i+1] / distanceFromCenter;
+      const directionToCenterZ = -positions[i+2] / distanceFromCenter;
+
+      // Gently move the cloud particle back toward the center
+      positions[i] += directionToCenterX * attractionStrength;
+      positions[i+1] += directionToCenterY * attractionStrength;
+      positions[i+2] += directionToCenterZ * attractionStrength;
+    }
   }
 
   // Notify Three.js that the positions have been updated
@@ -260,4 +280,4 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.2e');
+console.log('Version 0.0.3');
