@@ -8,16 +8,25 @@ let albumCovers = [];
 let raycaster = new THREE.Raycaster();
 let currentFocusedCover = null;
 let gazeTimer = null;
+let clouds = [];
+let cloudVelocities = [];
+
 const gazeDuration = 2000; // 2 seconds of gaze to trigger interaction
 
 // Initialize the scene
 function init() {
   scene = new THREE.Scene();
+  
+  // Set the background color of the scene to a sky-like color
+  scene.background = new THREE.Color(0x87CEEB); // Light sky-blue background
+  
+  // Add exponential fog to the scene for cloud-like effect
+  scene.fog = new THREE.FogExp2(0xFFFFFF, 0.15); // White fog with a higher density for a cloud-like effect
 
-    // Setup camera
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(1, 1, 2);  // Move the camera closer to the cubes (Z=2)
-    camera.lookAt(new THREE.Vector3(0, 1.6, 0));  // Ensure the camera is looking straight ahead
+  // Setup camera
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(1, 2, 5);  // Move the camera farther back for more fog interaction
+  camera.lookAt(new THREE.Vector3(0, 1.6, 0));  // Ensure the camera is looking straight ahead
 
   // Setup renderer with WebXR support
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -26,12 +35,15 @@ function init() {
   document.body.appendChild(renderer.domElement);
 
   // Add lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); // Lower intensity to see the fog effect more clearly
   scene.add(ambientLight);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7); // Dimmed directional light
   directionalLight.position.set(0, 10, 10);
   scene.add(directionalLight);
+
+  // Add clouds to the scene
+  addClouds();
 
   // Load external JSON and create album covers (cubes for each experience)
   loadConfigAndCreateCubes();
@@ -54,6 +66,42 @@ function init() {
 
   // Start the animation loop
   animate();
+}
+
+// Add cloud particles to the scene
+function addClouds() {
+  const cloudTexture = new THREE.TextureLoader().load('./scene/cloud.png');
+
+  const cloudMaterial = new THREE.PointsMaterial({
+    map: cloudTexture,
+    size: 5,  // Adjust the size of each cloud particle
+    transparent: true,
+    opacity: 0.6,
+    depthWrite: false // Prevents depth write to give a soft cloud effect
+  });
+
+  const cloudGeometry = new THREE.BufferGeometry();
+  const cloudCount = 2000;
+  const positions = [];
+
+  for (let i = 0; i < cloudCount; i++) {
+    const x = Math.random() * 200 - 100;
+    const y = Math.random() * 50 - 25;
+    const z = Math.random() * 200 - 100;
+
+    positions.push(x, y, z);
+
+    // Assign random velocities to each cloud particle
+    cloudVelocities.push({
+      x: (Math.random() - 0.5) * 0.01,  // Random speed on X axis
+      y: (Math.random() - 0.5) * 0.01,  // Random speed on Y axis
+      z: (Math.random() - 0.5) * 0.01,  // Random speed on Z axis
+    });
+  }
+
+  cloudGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  clouds = new THREE.Points(cloudGeometry, cloudMaterial);
+  scene.add(clouds);
 }
 
 // Load the external experiences.json and create cubes
@@ -159,6 +207,19 @@ function triggerInteraction(cover) {
 function animate() {
   requestAnimationFrame(animate);
 
+  // Move clouds along the X axis for a drifting effect
+  const positions = clouds.geometry.attributes.position.array;
+
+  // Move each cloud point based on its velocity
+  for (let i = 0; i < positions.length; i += 3) {
+    positions[i] += cloudVelocities[i / 3].x; // X axis
+    positions[i + 1] += cloudVelocities[i / 3].y; // Y axis
+    positions[i + 2] += cloudVelocities[i / 3].z; // Z axis
+  }
+
+  // Update position attributes
+  clouds.geometry.attributes.position.needsUpdate = true;
+
   if (controls) {
     controls.update(); // Update OrbitControls on desktop/mobile
   }
@@ -177,4 +238,4 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.1aa');
+console.log('Version 0.0.2b');
