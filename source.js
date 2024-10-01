@@ -153,12 +153,12 @@ function createAlbumCovers(config) {
       
       // Use MeshStandardMaterial to enable emissive property (glow)
       const materialArray = [
-        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x000000, emissiveIntensity: 1 }),
-        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x000000, emissiveIntensity: 1 }),
-        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x000000, emissiveIntensity: 1 }),
-        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x000000, emissiveIntensity: 1 }),
-        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x000000, emissiveIntensity: 1 }),
-        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x000000, emissiveIntensity: 1 })
+        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x301934, emissiveIntensity: 1 }),
+        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x301934, emissiveIntensity: 1 }),
+        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x301934, emissiveIntensity: 1 }),
+        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x301934, emissiveIntensity: 1 }),
+        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x301934, emissiveIntensity: 1 }),
+        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x301934, emissiveIntensity: 1 })
       ];
       
       const cube = new THREE.Mesh(geometry, materialArray);
@@ -192,7 +192,8 @@ function onMouseClick(event) {
       if (clickedCube) {
         clickedCube.material.forEach(material => {
           if (material.emissive) {
-            material.emissive.setHex(0x000000);  // Reset emissive color to black
+            material.emissive.setHex(0x301934);  // Reset emissive color to black
+            material.emissiveIntensity = 1;  // Reset emissive intensity
           }
         });
       }
@@ -201,17 +202,19 @@ function onMouseClick(event) {
       clickedCube = cube;
       clickedCube.material.forEach(material => {
         if (material.emissive) {
-          material.emissive.setHex(0xffff00);  // Set emissive color to yellow (glow)
+          material.emissive.setHex(0x5D3FD3);  // Set emissive color to iris
+          material.emissiveIntensity = 0.5;  // Reset emissive intensity
         }
       });
     } else {
       // If the same cube is clicked again, reset its emissive color
       clickedCube.material.forEach(material => {
         if (material.emissive) {
-          material.emissive.setHex(0x000000);  // Reset emissive color to black
+          material.emissive.setHex(0x301934);  // Reset emissive color to black
+          material.emissiveIntensity = 1;  // Reset emissive intensity
         }
       });
-      clickedCube = null;
+      clickedCube = null;  // Deselect the cube
     }
   }
 }
@@ -237,6 +240,7 @@ function setupDesktopControls() {
   controls.screenSpacePanning = false;  // Prevent panning
   controls.minDistance = 1;  // Set minimum zoom distance
   controls.maxDistance = 40;  // Set maximum zoom distance
+
 
     // Add mousedown listener for desktop mode
     window.addEventListener('mousedown', onMouseClick, false);
@@ -297,4 +301,4 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.3d');
+console.log('Version 0.0.3c');
