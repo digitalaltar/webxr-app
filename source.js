@@ -9,12 +9,13 @@ import { createNoise2D } from 'simplex-noise';  // Use named export
 let scene, camera, renderer, controls;
 let albumCovers = [];
 let raycaster = new THREE.Raycaster();
-let currentFocusedCover = null;
-let gazeTimer = null;
+let mouse = new THREE.Vector2();
+let clickedCube = null;  // Keep track of the currently clicked cube
 let clouds = [];
 let cloudVelocities = [];
 let cloudSizes = [];
 let cloudOpacities = [];
+let isWebXR = false;  // Track whether we're in WebXR mode
 
 // Simplex noise for organic movement
 const noise2D = createNoise2D();  // Create the noise generator
@@ -58,6 +59,7 @@ function init() {
   if (navigator.xr) {
     navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
       if (supported) {
+        isWebXR = true;
         document.body.appendChild(VRButton.createButton(renderer)); // Add VR Button only if VR is supported
         setupWebXRInline(); // Set up WebXR
       } else {
@@ -149,14 +151,14 @@ function createAlbumCovers(config) {
     loader.load(texturePath, (texture) => {
       const geometry = new THREE.BoxGeometry(1, 1, 1);
       
-      // Create a material for each face using the cover texture
+      // Use MeshStandardMaterial to enable emissive property (glow)
       const materialArray = [
-        new THREE.MeshBasicMaterial({ map: texture }), // right face
-        new THREE.MeshBasicMaterial({ map: texture }), // left face
-        new THREE.MeshBasicMaterial({ map: texture }), // top face
-        new THREE.MeshBasicMaterial({ map: texture }), // bottom face
-        new THREE.MeshBasicMaterial({ map: texture }), // front face
-        new THREE.MeshBasicMaterial({ map: texture })  // back face
+        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x000000, emissiveIntensity: 1 }),
+        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x000000, emissiveIntensity: 1 }),
+        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x000000, emissiveIntensity: 1 }),
+        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x000000, emissiveIntensity: 1 }),
+        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x000000, emissiveIntensity: 1 }),
+        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x000000, emissiveIntensity: 1 })
       ];
       
       const cube = new THREE.Mesh(geometry, materialArray);
@@ -169,6 +171,49 @@ function createAlbumCovers(config) {
       albumCovers.push(cube);
     });
   });
+}
+
+// Handle mouse click and raycasting for click effect
+function onMouseClick(event) {
+  // Convert mouse position to normalized device coordinates (-1 to +1 range)
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  // Use raycaster to detect which cube was clicked
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(albumCovers);
+
+  if (intersects.length > 0) {
+    const cube = intersects[0].object;
+
+    // Toggle the clicked cube's emissive color
+    if (clickedCube !== cube) {
+      // Reset previously clicked cube's emissive color
+      if (clickedCube) {
+        clickedCube.material.forEach(material => {
+          if (material.emissive) {
+            material.emissive.setHex(0x000000);  // Reset emissive color to black
+          }
+        });
+      }
+
+      // Highlight the new clicked cube
+      clickedCube = cube;
+      clickedCube.material.forEach(material => {
+        if (material.emissive) {
+          material.emissive.setHex(0xffff00);  // Set emissive color to yellow (glow)
+        }
+      });
+    } else {
+      // If the same cube is clicked again, reset its emissive color
+      clickedCube.material.forEach(material => {
+        if (material.emissive) {
+          material.emissive.setHex(0x000000);  // Reset emissive color to black
+        }
+      });
+      clickedCube = null;
+    }
+  }
 }
 
 // Setup VR/WebXR for inline mode (non-immersive)
@@ -192,45 +237,17 @@ function setupDesktopControls() {
   controls.screenSpacePanning = false;  // Prevent panning
   controls.minDistance = 1;  // Set minimum zoom distance
   controls.maxDistance = 40;  // Set maximum zoom distance
+
+    // Add mousedown listener for desktop mode
+    window.addEventListener('mousedown', onMouseClick, false);
 }
 
-// Detect gaze or mouse pointer interactions
-function detectGaze() {
-  raycaster.setFromCamera(new THREE.Vector2(0, 0), camera); // From the center of the screen
-
-  const intersects = raycaster.intersectObjects(albumCovers);
-
-  if (intersects.length > 0) {
-    const focusedCover = intersects[0].object;
-
-    // If focusing on a new object, start gaze timer
-    if (focusedCover !== currentFocusedCover) {
-      clearTimeout(gazeTimer);
-      currentFocusedCover = focusedCover;
-
-      gazeTimer = setTimeout(() => {
-        triggerInteraction(focusedCover);
-      }, gazeDuration);
-    }
-  } else {
-    clearTimeout(gazeTimer);
-    currentFocusedCover = null;
-  }
-}
-
-// Trigger interaction (e.g., change color)
-function triggerInteraction(cover) {
-  cover.material[0].color.set(0xffff00); // Change to yellow for the first material face
-  console.log(`Focused on ${cover.name}`);
-}
-
-// Animate
+// Animate function
 function animate() {
   requestAnimationFrame(animate);
 
   const positions = clouds.geometry.attributes.position.array;
   const time = performance.now() * 0.001;  // Time variable for smooth transitions
-
   const maxDistance = 50;   // Maximum distance clouds can drift before being pulled back
   const attractionStrength = 0.005; // How strongly to pull clouds back to the center
 
@@ -280,4 +297,4 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.3');
+console.log('Version 0.0.3d');
