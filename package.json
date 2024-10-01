@@ -8,6 +8,7 @@
     "start": "webpack serve --open --mode development"
   },
   "dependencies": {
+    "simplex-noise": "^4.0.3",
     "three": "^0.169.0"
   },
   "devDependencies": {

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { VRButton } from 'three/examples/jsm/webxr/VRButton';
 import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory'; // Keep this for future VR
+import { createNoise2D } from 'simplex-noise';  // Use named export
 
 let scene, camera, renderer, controls;
 let albumCovers = [];
@@ -10,6 +11,11 @@ let currentFocusedCover = null;
 let gazeTimer = null;
 let clouds = [];
 let cloudVelocities = [];
+let cloudSizes = [];
+let cloudOpacities = [];
+
+// Simplex noise for organic movement
+const noise2D = createNoise2D();  // Create the noise generator
 
 const gazeDuration = 2000; // 2 seconds of gaze to trigger interaction
 
@@ -20,12 +26,9 @@ function init() {
   // Set the background color of the scene to a sky-like color
   scene.background = new THREE.Color(0x87CEEB); // Light sky-blue background
   
-  // Add exponential fog to the scene for cloud-like effect
-  scene.fog = new THREE.FogExp2(0xFFFFFF, 0.15); // White fog with a higher density for a cloud-like effect
-
   // Setup camera
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(1, 2, 5);  // Move the camera farther back for more fog interaction
+  camera.position.set(1, 2, 5);
   camera.lookAt(new THREE.Vector3(0, 1.6, 0));  // Ensure the camera is looking straight ahead
 
   // Setup renderer with WebXR support
@@ -35,7 +38,7 @@ function init() {
   document.body.appendChild(renderer.domElement);
 
   // Add lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); // Lower intensity to see the fog effect more clearly
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
   scene.add(ambientLight);
 
   const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7); // Dimmed directional light
@@ -71,18 +74,11 @@ function init() {
 // Add cloud particles to the scene
 function addClouds() {
   const cloudTexture = new THREE.TextureLoader().load('./scene/cloud.png');
-
-  const cloudMaterial = new THREE.PointsMaterial({
-    map: cloudTexture,
-    size: 5,  // Adjust the size of each cloud particle
-    transparent: true,
-    opacity: 0.6,
-    depthWrite: false // Prevents depth write to give a soft cloud effect
-  });
-
+  
   const cloudGeometry = new THREE.BufferGeometry();
-  const cloudCount = 2000;
+  const cloudCount = 2000;  // Number of particles
   const positions = [];
+  const colors = [];
 
   for (let i = 0; i < cloudCount; i++) {
     const x = Math.random() * 200 - 100;
@@ -91,15 +87,37 @@ function addClouds() {
 
     positions.push(x, y, z);
 
-    // Assign random velocities to each cloud particle
+    // Assign random velocities to each cloud particle for organic movement
     cloudVelocities.push({
-      x: (Math.random() - 0.5) * 0.01,  // Random speed on X axis
-      y: (Math.random() - 0.5) * 0.01,  // Random speed on Y axis
-      z: (Math.random() - 0.5) * 0.01,  // Random speed on Z axis
+      x: (Math.random() - 0.5) * 0.01,
+      y: (Math.random() - 0.5) * 0.01,
+      z: (Math.random() - 0.5) * 0.01
     });
+
+    // Random initial size and opacity for clouds
+    cloudSizes.push(Math.random() * 5 + 5); // Initial size
+    cloudOpacities.push(Math.random() * 0.4 + 0.3); // Initial opacity
+
+    // Color variation (white to light purple)
+    const color = new THREE.Color(0xffffff);  // Start with white
+    const purpleTint = Math.random() * 0.6;   // Adding a random purple tint
+    color.r += purpleTint; // Slightly increase the red
+    color.b += purpleTint; // Slightly increase the blue (purple)
+    colors.push(color.r, color.g, color.b);
   }
 
   cloudGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  cloudGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+  const cloudMaterial = new THREE.PointsMaterial({
+    map: cloudTexture,
+    size: 10,  // This will be dynamically adjusted
+    vertexColors: true,  // Enable per-particle color
+    transparent: true,
+    opacity: 0.7,  // This will also be dynamically adjusted
+    depthWrite: false
+  });
+
   clouds = new THREE.Points(cloudGeometry, cloudMaterial);
   scene.add(clouds);
 }
@@ -203,29 +221,33 @@ function triggerInteraction(cover) {
   console.log(`Focused on ${cover.name}`);
 }
 
-// Animation loop
 function animate() {
   requestAnimationFrame(animate);
 
-  // Move clouds along the X axis for a drifting effect
   const positions = clouds.geometry.attributes.position.array;
+  const time = performance.now() * 0.001;  // Time variable for smooth transitions
 
-  // Move each cloud point based on its velocity
+  // Move each cloud point based on its velocity and noise for organic movement
   for (let i = 0; i < positions.length; i += 3) {
-    positions[i] += cloudVelocities[i / 3].x; // X axis
-    positions[i + 1] += cloudVelocities[i / 3].y; // Y axis
-    positions[i + 2] += cloudVelocities[i / 3].z; // Z axis
+    // Apply Simplex noise to each axis with a slight random time offset for each particle
+    const noiseX = 0.002 * noise2D(time + i, positions[i]);      // Apply noise to X
+    const noiseY = 0.002 * noise2D(time + i + 1000, positions[i + 1]);  // Apply noise to Y
+    const noiseZ = 0.002 * noise2D(time + i + 2000, positions[i + 2]);  // Apply noise to Z
+
+    // Update the position based on velocity and noise (adding subtle shifts)
+    positions[i] += cloudVelocities[i / 3].x + noiseX;  // X axis
+    positions[i + 1] += cloudVelocities[i / 3].y + noiseY;  // Y axis
+    positions[i + 2] += cloudVelocities[i / 3].z + noiseZ;  // Z axis
   }
 
-  // Update position attributes
+  // Notify Three.js that the positions have been updated
   clouds.geometry.attributes.position.needsUpdate = true;
 
   if (controls) {
-    controls.update(); // Update OrbitControls on desktop/mobile
+    controls.update();  // Update controls for OrbitControls
   }
 
-  detectGaze(); // Detect gaze or pointer interaction
-  renderer.render(scene, camera);
+  renderer.render(scene, camera);  // Render the scene with updated positions
 }
 
 // Resize handler
@@ -238,4 +260,4 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.2b');
+console.log('Version 0.0.2e');
