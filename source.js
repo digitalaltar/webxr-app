@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { VRButton } from 'three/examples/jsm/webxr/VRButton';
-import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory'; // Keep this for VR
+import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory'; // Keep this for future VR
 
 let scene, camera, renderer, controls;
 let albumCovers = [];
@@ -10,25 +10,20 @@ let currentFocusedCover = null;
 let gazeTimer = null;
 const gazeDuration = 2000; // 2 seconds of gaze to trigger interaction
 
-const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-const useWebXR = !!navigator.xr;
-
 // Initialize the scene
 function init() {
   scene = new THREE.Scene();
 
-  // Setup camera
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 1.6, 3);
+    // Setup camera
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(1, 1, 2);  // Move the camera closer to the cubes (Z=2)
+    camera.lookAt(new THREE.Vector3(0, 1.6, 0));  // Ensure the camera is looking straight ahead
 
   // Setup renderer with WebXR support
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.xr.enabled = true; // Enable WebXR
   document.body.appendChild(renderer.domElement);
-
-  // Add VR Button for future compatibility
-  document.body.appendChild(VRButton.createButton(renderer));
 
   // Add lighting
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -38,44 +33,73 @@ function init() {
   directionalLight.position.set(0, 10, 10);
   scene.add(directionalLight);
 
-  // Add ground plane
-  const groundGeometry = new THREE.PlaneGeometry(10, 10);
-  const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x008800 });
-  const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-  ground.rotation.x = -Math.PI / 2;
-  scene.add(ground);
+  // Load external JSON and create album covers (cubes for each experience)
+  loadConfigAndCreateCubes();
 
-  // Create album covers (simple cubes for now)
-  createAlbumCovers();
-
-  // Setup controls based on device type
-  if (useWebXR) {
-    setupWebXRInline(); // Prepare for future VR support
+  // Check if WebXR is supported and add the VRButton only if it is
+  if (navigator.xr) {
+    navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+      if (supported) {
+        document.body.appendChild(VRButton.createButton(renderer)); // Add VR Button only if VR is supported
+        setupWebXRInline(); // Set up WebXR
+      } else {
+        console.log("WebXR not supported, falling back to OrbitControls.");
+        setupDesktopControls(); // Fall back to OrbitControls if WebXR is not supported
+      }
+    });
   } else {
-    setupDesktopControls(); // Use OrbitControls on desktop/mobile
+    console.log("WebXR not available, falling back to OrbitControls.");
+    setupDesktopControls(); // Fall back to OrbitControls if WebXR is unavailable
   }
 
   // Start the animation loop
   animate();
 }
 
-// Create album covers (cubes as placeholders)
-function createAlbumCovers() {
-  const geometry = new THREE.BoxGeometry(1, 1, 1);
-  const material1 = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red
-  const material2 = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Green
-  const material3 = new THREE.MeshBasicMaterial({ color: 0x0000ff }); // Blue
+// Load the external experiences.json and create cubes
+function loadConfigAndCreateCubes() {
+  fetch('./experiences.json')
+    .then((response) => response.json())
+    .then((config) => {
+      createAlbumCovers(config);
+    })
+    .catch((error) => {
+      console.error('Error loading JSON:', error);
+    });
+}
 
-  const cover1 = new THREE.Mesh(geometry, material1);
-  const cover2 = new THREE.Mesh(geometry, material2);
-  const cover3 = new THREE.Mesh(geometry, material3);
-
-  cover1.position.set(-2, 0.5, -3);
-  cover2.position.set(0, 0.5, -3);
-  cover3.position.set(2, 0.5, -3);
-
-  scene.add(cover1, cover2, cover3);
-  albumCovers.push(cover1, cover2, cover3);
+// Create album covers (cubes) for each experience
+function createAlbumCovers(config) {
+  const loader = new THREE.TextureLoader();
+  
+  // Loop through each experience in the config
+  config.experiences.forEach((experience, index) => {
+    const texturePath = `${config.basePath}${experience.folder}/${config.coverFile}`;
+    
+    // Load the texture for the cube face
+    loader.load(texturePath, (texture) => {
+      const geometry = new THREE.BoxGeometry(1, 1, 1);
+      
+      // Create a material for each face using the cover texture
+      const materialArray = [
+        new THREE.MeshBasicMaterial({ map: texture }), // right face
+        new THREE.MeshBasicMaterial({ map: texture }), // left face
+        new THREE.MeshBasicMaterial({ map: texture }), // top face
+        new THREE.MeshBasicMaterial({ map: texture }), // bottom face
+        new THREE.MeshBasicMaterial({ map: texture }), // front face
+        new THREE.MeshBasicMaterial({ map: texture })  // back face
+      ];
+      
+      const cube = new THREE.Mesh(geometry, materialArray);
+      
+      // Position each cube with some spacing, bring closer (Z=-1.5)
+      cube.position.set(-2 + index * 2, 1, -1.5);
+      cube.name = experience.name;
+      
+      scene.add(cube);
+      albumCovers.push(cube);
+    });
+  });
 }
 
 // Setup VR/WebXR for inline mode (non-immersive)
@@ -96,6 +120,9 @@ function setupDesktopControls() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.1;
+  controls.screenSpacePanning = false;  // Prevent panning
+  controls.minDistance = 0.5;  // Set minimum zoom distance
+  controls.maxDistance = 1000;  // Set maximum zoom distance
 }
 
 // Detect gaze or mouse pointer interactions
@@ -124,8 +151,8 @@ function detectGaze() {
 
 // Trigger interaction (e.g., change color)
 function triggerInteraction(cover) {
-  cover.material.color.set(0xffff00); // Change to yellow
-  console.log(`Focused on ${cover.position.x}`);
+  cover.material[0].color.set(0xffff00); // Change to yellow for the first material face
+  console.log(`Focused on ${cover.name}`);
 }
 
 // Animation loop
@@ -149,3 +176,5 @@ window.addEventListener('resize', () => {
 
 // Initialize the scene
 init();
+
+console.log('Version 0.0.1aa');
