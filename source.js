@@ -99,16 +99,42 @@ function createAudioPlayerInScene() {
     // Create an HTML5 audio player
     const audioElement = document.createElement('audio');
     audioElement.controls = true;
-    audioElement.src = ''; // Will be set dynamically when a cube is clicked
-    
-    audioElement.classList.add('audio-player'); // Custom class for styling
-    audioElement.style.display = 'none'; // Hide the player when the song stops
+    audioElement.src = ''; // Your audio source
 
-    // Add the audio element to the document body
+    // Custom class for styling
+    audioElement.classList.add('audio-player');
+    
+    // Initially hide the audio player
+    audioElement.style.display = 'none';
+
+    // Append the audio element to the document body
     document.body.appendChild(audioElement);
 
-    // Store references for later use
+    // Store reference for later use
     window.audioElement = audioElement;
+
+    // Function to hide the audio player
+    function hideAudioPlayer() {
+        audioElement.style.display = 'none';
+    }
+
+    // Function to show the audio player
+    function showAudioPlayer() {
+        audioElement.style.display = 'block';
+    }
+
+    // Event listeners to hide the player when audio stops
+    audioElement.addEventListener('pause', hideAudioPlayer);
+    audioElement.addEventListener('ended', hideAudioPlayer);
+
+    // Event listener to show the player when audio plays
+    audioElement.addEventListener('play', showAudioPlayer);
+
+    // Manual trigger to show the player when the user interacts
+    window.showAudioPlayer = function () {
+        audioElement.style.display = 'block';
+        audioElement.play(); // Start playing when shown
+    };
 }
 
 // Add cloud particles to the scene
@@ -471,4 +497,4 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.5');
+console.log('Version 0.0.5b');
