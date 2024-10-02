@@ -11,6 +11,7 @@ let albumCovers = [];
 let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
 let clickedCube = null;  // Keep track of the currently clicked cube
+let spinningCubes = new Set(); // Set to track which cubes are spinning
 let clouds = [];
 let cloudVelocities = [];
 let cloudSizes = [];
@@ -37,12 +38,13 @@ function init() {
 
   // Setup renderer with WebXR support
   renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.xr.enabled = true; // Enable WebXR
   document.body.appendChild(renderer.domElement);
 
   // Add lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
   scene.add(ambientLight);
 
   const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7); // Dimmed directional light
@@ -74,6 +76,7 @@ function init() {
 
   // Start the animation loop
   animate();
+  requestAnimationFrame(animateSpin);
 }
 
 // Add cloud particles to the scene
@@ -105,7 +108,7 @@ function addClouds() {
 
     // Color variation (white to light purple)
     const color = new THREE.Color(0xffffff);  // Start with white
-    const purpleTint = Math.random() * 0.6;   // Adding a random purple tint
+    const purpleTint = Math.random() * 1;   // Adding a random purple tint
     color.r += purpleTint; // Slightly increase the red
     color.b += purpleTint; // Slightly increase the blue (purple)
     colors.push(color.r, color.g, color.b);
@@ -139,6 +142,38 @@ function loadConfigAndCreateCubes() {
     });
 }
 
+// Base cubeMaterial without the texture reference
+const cubeMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    map: { value: null },       // We'll assign the texture dynamically per cube
+    exposure: { value: 1 },   // Control exposure
+    emissive: { value: new THREE.Color(0x000000) },  // Emissive color (initially no glow)
+    emissiveIntensity: { value: 0.0 }                // Emissive intensity (initially no glow)
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;  // Pass UV coordinates to fragment shader
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D map;
+    uniform float exposure;
+    uniform vec3 emissive;         // Emissive color
+    uniform float emissiveIntensity;  // Emissive intensity
+    varying vec2 vUv;
+
+    void main() {
+      vec4 texColor = texture2D(map, vUv);  // Sample the texture using UVs
+      texColor.rgb *= exposure;             // Apply exposure adjustment
+      texColor.rgb += emissive * emissiveIntensity;  // Apply emissive effect
+      gl_FragColor = vec4(texColor.rgb, texColor.a);
+    }
+  `,
+  transparent: false
+});
+
 // Create album covers (cubes) for each experience
 function createAlbumCovers(config) {
   const loader = new THREE.TextureLoader();
@@ -149,25 +184,24 @@ function createAlbumCovers(config) {
     
     // Load the texture for the cube face
     loader.load(texturePath, (texture) => {
+      texture.colorSpace = THREE.LinearSRGBColorSpace; // Ensure the texture is using the correct color space
+      
       const geometry = new THREE.BoxGeometry(1, 1, 1);
       
-      // Use MeshStandardMaterial to enable emissive property (glow)
-      const materialArray = [
-        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x301934, emissiveIntensity: 1 }),
-        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x301934, emissiveIntensity: 1 }),
-        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x301934, emissiveIntensity: 1 }),
-        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x301934, emissiveIntensity: 1 }),
-        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x301934, emissiveIntensity: 1 }),
-        new THREE.MeshStandardMaterial({ map: texture, emissive: 0x301934, emissiveIntensity: 1 })
-      ];
+      // Clone the base material for each cube and set its unique texture
+      const cubeMaterialClone = cubeMaterial.clone();
+      cubeMaterialClone.uniforms.map.value = texture;  // Assign the unique texture to each cube
       
-      const cube = new THREE.Mesh(geometry, materialArray);
+      const cube = new THREE.Mesh(geometry, cubeMaterialClone);
       
-      // Position each cube with some spacing, bring closer (Z=-1.5)
-      cube.position.set(-2 + index * 2, 1, -1.5);
+      // Position each cube with some spacing, and bring closer (Z=-1.5)
+      cube.position.set(-2 + index * 2, 1, -1.5); // Adjust the spacing and Z position
       cube.name = experience.name;
       
+      // Add the cube to the scene
       scene.add(cube);
+      
+      // Push cube into the albumCovers array for interaction and raycasting
       albumCovers.push(cube);
     });
   });
@@ -186,37 +220,45 @@ function onMouseClick(event) {
   if (intersects.length > 0) {
     const cube = intersects[0].object;
 
-    // Toggle the clicked cube's emissive color
+    // Toggle the clicked cube's emissive color and spinning state
     if (clickedCube !== cube) {
-      // Reset previously clicked cube's emissive color
+      // Reset the previously clicked cube's state (stop glow, spin, and move down)
       if (clickedCube) {
-        clickedCube.material.forEach(material => {
-          if (material.emissive) {
-            material.emissive.setHex(0x301934);  // Reset emissive color to black
-            material.emissiveIntensity = 1;  // Reset emissive intensity
-          }
-        });
+        clickedCube.material.uniforms.emissive.value.set(0x000000);  // Reset emissive color (no glow)
+        clickedCube.material.uniforms.emissiveIntensity.value = 0;   // Reset emissive intensity
+        clickedCube.position.y -= 0.2;  // Move the cube down
+        spinningCubes.delete(clickedCube);  // Stop spinning the previous cube
       }
 
-      // Highlight the new clicked cube
+      // Set the new clicked cube
       clickedCube = cube;
-      clickedCube.material.forEach(material => {
-        if (material.emissive) {
-          material.emissive.setHex(0x5D3FD3);  // Set emissive color to iris
-          material.emissiveIntensity = 0.5;  // Reset emissive intensity
-        }
-      });
+      clickedCube.material.uniforms.emissive.value.set(0x5D3FD3);  // Set emissive color (glow effect)
+      clickedCube.material.uniforms.emissiveIntensity.value = 1;   // Set emissive intensity
+      clickedCube.position.y += 0.2;  // Move the cube up
+      spinningCubes.add(clickedCube);  // Start spinning the clicked cube
+
     } else {
-      // If the same cube is clicked again, reset its emissive color
-      clickedCube.material.forEach(material => {
-        if (material.emissive) {
-          material.emissive.setHex(0x301934);  // Reset emissive color to black
-          material.emissiveIntensity = 1;  // Reset emissive intensity
-        }
-      });
+      // If the same cube is clicked again, reset its emissive color and stop spinning
+      clickedCube.material.uniforms.emissive.value.set(0x000000);  // Reset emissive color (no glow)
+      clickedCube.material.uniforms.emissiveIntensity.value = 0;   // Reset emissive intensity
+      clickedCube.position.y -= 0.2;  // Move the cube down 
+      spinningCubes.delete(clickedCube);  // Stop spinning the cube
       clickedCube = null;  // Deselect the cube
     }
   }
+}
+
+// Function to animate the spinning cubes
+function animateSpin() {
+  const spinSpeed = 0.02; // Adjust the spin speed
+
+  // Loop over each cube in the spinning set and rotate it
+  spinningCubes.forEach(cube => {
+    cube.rotation.y += spinSpeed; // Rotate around the Y-axis
+  });
+
+  // Continue the animation loop
+  requestAnimationFrame(animateSpin);
 }
 
 // Setup VR/WebXR for inline mode (non-immersive)
@@ -301,4 +343,4 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.3c');
+console.log('Version 0.0.3l');
