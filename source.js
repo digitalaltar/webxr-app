@@ -255,54 +255,61 @@ function onMouseClick(event) {
     const cube = intersects[0].object;
     const experience = config.experiences.find(e => e.name === cube.name);
 
+    // If the experience exists, construct the full path to the song
     if (experience) {
-      const songPath = `${config.basePath}${experience.folder}/${config.audioFile}`;
-      
-      // If the same cube is clicked again, toggle the music (pause/resume without reset)
-      if (playingCube === cube) {
-        if (window.audioElement.paused) {
-          // Resume audio if paused
-          window.audioElement.play();
-          spinningCubes.add(cube); // Resume spinning
-          console.log('Audio resumed.');
+      // If the same cube is clicked again, stop the music
+        if (playingCube === cube) {
+          // If the audio is currently playing, pause it
+          if (!window.audioElement.paused) {
+            window.audioElement.pause();  // Pause the audio
+            console.log('Audio paused.');
+          } else {
+            // If the audio is paused, resume playing from where it left off
+            window.audioElement.play().then(() => {
+              console.log('Audio resumed.');
+              window.audioElement.style.display = 'block'; // Show the player when the song plays
+            }).catch(error => {
+              console.error('Audio resume failed:', error);
+            });
+          }
         } else {
-          // Pause the audio if playing
-          window.audioElement.pause();
-          spinningCubes.delete(cube); // Stop spinning
-          console.log('Audio paused.');
+          // If a different cube is selected, stop the current audio
+          if (playingCube !== null) {
+            window.audioElement.pause();  // Pause the previous audio
+            console.log('Previous audio paused.');
+            window.audioElement.style.display = 'none';  // Hide the player when switching songs
+          }
+
+          // Construct the full path to the new audio file using basePath, folder, and audioFile
+          const songPath = `${config.basePath}${experience.folder}/${config.audioFile}`;
+
+          // Log to verify path construction
+          console.log(`Attempting to play: ${songPath}`);
+
+          // Set the new audio source
+          window.audioElement.src = songPath;
+
+          // Play the new audio and ensure the player is displayed only if the audio plays successfully
+          window.audioElement.play().then(() => {
+            console.log('Audio is playing.');
+            window.audioElement.style.display = 'block'; // Show the player when the song starts
+            playingCube = cube;  // Set the currently playing cube
+          }).catch(error => {
+            console.error('Audio play failed:', error);
+            window.audioElement.style.display = 'none'; // Hide player if the audio play fails
+          });
         }
-      } else {
-        // Handle switching to a new cube
-        if (playingCube !== null) {
-          // Pause the previous cube's audio and stop its spinning
-          window.audioElement.pause();
-          spinningCubes.delete(playingCube);
-          console.log('Previous audio paused.');
-        }
-
-        // Set the new audio source and play the song
-        window.audioElement.src = songPath;
-
-        window.audioElement.play().then(() => {
-          console.log('Audio is playing.');
-          window.audioElement.style.display = 'block'; // Show the player
-          playingCube = cube;  // Set the currently playing cube
-          spinningCubes.add(cube);  // Start spinning the clicked cube
-        }).catch(error => {
-          console.error('Audio play failed:', error);
-          window.audioElement.style.display = 'none'; // Hide player if audio play fails
-        });
-      }
-
-      // Event listener for when audio naturally ends
-      window.audioElement.onended = () => {
-        spinningCubes.delete(cube);  // Stop spinning when the audio ends
-        console.log('Audio ended.');
-      };
     }
 
-    // Handle cube selection state (visual effect)
+    // Event listener for when audio naturally ends
+    window.audioElement.onended = () => {
+      console.log('Audio ended.');
+      resetCubeState(cube);  // Reset cube position and stop spinning
+    };
+
+    // Toggle the clicked cube's emissive color and spinning state
     if (clickedCube !== cube) {
+      // Reset the previously clicked cube's state (stop glow, spin, and move down)
       if (clickedCube) {
         clickedCube.material.uniforms.emissive.value.set(0x000000);  // Reset emissive color (no glow)
         clickedCube.material.uniforms.emissiveIntensity.value = 0;   // Reset emissive intensity
@@ -315,6 +322,8 @@ function onMouseClick(event) {
       clickedCube.material.uniforms.emissive.value.set(0x5D3FD3);  // Set emissive color (glow effect)
       clickedCube.material.uniforms.emissiveIntensity.value = 1;   // Set emissive intensity
       clickedCube.position.y += 0.2;  // Move the cube up
+      spinningCubes.add(clickedCube);  // Start spinning the clicked cube
+
     } else {
       // If the same cube is clicked again, reset its emissive color and stop spinning
       clickedCube.material.uniforms.emissive.value.set(0x000000);  // Reset emissive color (no glow)
@@ -323,6 +332,21 @@ function onMouseClick(event) {
       spinningCubes.delete(clickedCube);  // Stop spinning the cube
       clickedCube = null;  // Deselect the cube
     }
+  }
+}
+
+// Function to reset the cube's state (position, emissive color, and stop spinning)
+function resetCubeState(cube) {
+  if (cube) {
+    // Reset the cube's position to its original Y position
+    cube.position.y -= 0.2;  // Move the cube back down
+
+    // Reset the emissive color and intensity
+    cube.material.uniforms.emissive.value.set(0x000000);  // Reset emissive color (no glow)
+    cube.material.uniforms.emissiveIntensity.value = 0;   // Reset emissive intensity
+
+    // Stop the spinning by removing the cube from the spinningCubes set
+    spinningCubes.delete(cube);
   }
 }
 
