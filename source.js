@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { VRButton } from 'three/examples/jsm/webxr/VRButton';
 import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory'; // Keep this for future VR
 import { createNoise2D } from 'simplex-noise';  // Use named export
+import { CSS3DRenderer, CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer';
 
 // Variables
 let scene, camera, renderer, controls;
@@ -12,11 +13,14 @@ let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
 let clickedCube = null;  // Keep track of the currently clicked cube
 let spinningCubes = new Set(); // Set to track which cubes are spinning
+let playingCube = null;
 let clouds = [];
 let cloudVelocities = [];
 let cloudSizes = [];
 let cloudOpacities = [];
 let isWebXR = false;  // Track whether we're in WebXR mode
+let css3DRenderer;
+let config;
 
 // Simplex noise for organic movement
 const noise2D = createNoise2D();  // Create the noise generator
@@ -27,7 +31,15 @@ const gazeDuration = 2000; // 2 seconds of gaze to trigger interaction
 // Initialize the scene
 function init() {
   scene = new THREE.Scene();
-  
+
+    // Setup CSS3DRenderer
+    css3DRenderer = new CSS3DRenderer();
+    css3DRenderer.setSize(window.innerWidth, window.innerHeight);
+    css3DRenderer.domElement.style.position = 'absolute';
+    css3DRenderer.domElement.style.top = '0';
+    document.body.appendChild(css3DRenderer.domElement);
+    css3DRenderer.domElement.style.pointerEvents = 'none';
+
   // Set the background color of the scene to a sky-like color
   scene.background = new THREE.Color(0x87CEEB); // Light sky-blue background
   
@@ -74,9 +86,38 @@ function init() {
     setupDesktopControls(); // Fall back to OrbitControls if WebXR is unavailable
   }
 
+  // Add audio player
+    createAudioPlayerInScene();
+
   // Start the animation loop
   animate();
   requestAnimationFrame(animateSpin);
+}
+
+// Create Audio Player
+function createAudioPlayerInScene() {
+    // Create an HTML5 audio player
+    const audioElement = document.createElement('audio');
+    audioElement.controls = true;
+    audioElement.src = ''; // Will be set dynamically when a cube is clicked
+    
+    // Style the audio player to appear at the bottom center of the screen
+    audioElement.style.position = 'fixed';
+    audioElement.style.bottom = '30px';
+    audioElement.style.left = '50%';
+    audioElement.style.width = "50%";
+    audioElement.style.transform = 'translateX(-50%)';  // Adjust for centering
+    audioElement.style.maxWidth = '350px';  // Set a fixed width
+    audioElement.style.zIndex = '1000';  // Ensure it's on top of the 3D scene
+    audioElement.style.opacity = '0.60';
+    audioElement.style.borderRadius = '28px'; // Rounded corners
+    audioElement.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.19)'; // Adds a soft shadow for 3D effect
+
+    // Add the audio element to the document body
+    document.body.appendChild(audioElement);
+
+    // Store references for later use
+    window.audioElement = audioElement;
 }
 
 // Add cloud particles to the scene
@@ -134,13 +175,15 @@ function addClouds() {
 function loadConfigAndCreateCubes() {
   fetch('./experiences.json')
     .then((response) => response.json())
-    .then((config) => {
-      createAlbumCovers(config);
+    .then((jsonData) => {
+      config = jsonData;  // Store the JSON data in the global config variable
+      createAlbumCovers(config);  // Create cubes based on the loaded config
     })
     .catch((error) => {
       console.error('Error loading JSON:', error);
     });
 }
+
 
 // Base cubeMaterial without the texture reference
 const cubeMaterial = new THREE.ShaderMaterial({
@@ -219,6 +262,40 @@ function onMouseClick(event) {
 
   if (intersects.length > 0) {
     const cube = intersects[0].object;
+    const experience = config.experiences.find(e => e.name === cube.name);
+
+    // If the experience exists, construct the full path to the song
+    if (experience) {
+      // If the same cube is clicked again, stop the music
+      if (playingCube === cube) {
+        window.audioElement.pause();  // Stop the audio
+        window.audioElement.currentTime = 0;  // Reset the audio to the start
+        console.log('Audio stopped.');
+        playingCube = null;  // Clear the playing cube reference
+      } else {
+        // Construct the full path to the audio file using basePath, folder, and audioFile
+        const songPath = `${config.basePath}${experience.folder}/${config.audioFile}`;
+        
+        // Log to verify path construction
+        console.log(`Attempting to play: ${songPath}`);
+
+        // Stop the current song if another cube is clicked
+        if (playingCube !== null) {
+          window.audioElement.pause();  // Stop the previous audio
+          window.audioElement.currentTime = 0;  // Reset the audio to the start
+          console.log('Previous audio stopped.');
+        }
+
+        // Set the new audio source and play the song
+        window.audioElement.src = songPath;
+        window.audioElement.play().then(() => {
+          console.log('Audio is playing.');
+          playingCube = cube;  // Set the currently playing cube
+        }).catch(error => {
+          console.error('Audio play failed:', error);
+        });
+      }
+    }
 
     // Toggle the clicked cube's emissive color and spinning state
     if (clickedCube !== cube) {
@@ -248,9 +325,21 @@ function onMouseClick(event) {
   }
 }
 
+// Function to position the audio player next to the clicked cube
+function positionAudioPlayerNextToCube(cube) {
+    // Get the position of the clicked cube
+    const cubePosition = cube.position.clone();
+
+    // Position the audio player relative to the clicked cube (slightly above and to the side)
+    const audioPlayerPosition = (-5 + index * 2, 1, -1.5);
+
+    // Move the CSS3DObject (audio player) to this position
+    window.audioElementObject.position.copy(audioPlayerPosition);
+}
+
 // Function to animate the spinning cubes
 function animateSpin() {
-  const spinSpeed = 0.02; // Adjust the spin speed
+  const spinSpeed = 0.01; // Adjust the spin speed
 
   // Loop over each cube in the spinning set and rotate it
   spinningCubes.forEach(cube => {
@@ -353,7 +442,10 @@ function animate() {
     controls.update();  // Update controls for OrbitControls
   }
 
-  renderer.render(scene, camera);  // Render the scene with updated positions
+    // Render WebGL and CSS3D layers
+    renderer.render(scene, camera);
+    css3DRenderer.render(scene, camera);
+
 }
 
 // Resize handler
@@ -366,4 +458,4 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.3n');
+console.log('Version 0.0.4g');

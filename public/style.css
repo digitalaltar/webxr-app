@@ -142,3 +142,8 @@ body {
   filter: brightness(2); /* Increase brightness */
   transform: scale(1.1); /* Optional: Slightly scale the text on hover */
 }
+audio {
+    border: 1px solid white;
+    border-radius: 5px;
+    max-width: 30%;
+}
