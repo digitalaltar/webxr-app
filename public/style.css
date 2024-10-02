@@ -102,12 +102,12 @@ body {
 }
 .audio-player {
     position: fixed;
-    bottom: 30px;
+    bottom: 60px;
     left: 50%;
     width: 50%;
     max-width: 350px;
     transform: translateX(-50%);
-    z-index: 2000;  /* Ensure it's on top of the 3D scene */
+    z-index: 1000;  /* Ensure it's on top of the 3D scene */
     opacity: 0.60;
     display: none;
 }
