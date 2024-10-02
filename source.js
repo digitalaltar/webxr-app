@@ -101,17 +101,8 @@ function createAudioPlayerInScene() {
     audioElement.controls = true;
     audioElement.src = ''; // Will be set dynamically when a cube is clicked
     
-    // Style the audio player to appear at the bottom center of the screen
-    audioElement.style.position = 'fixed';
-    audioElement.style.bottom = '30px';
-    audioElement.style.left = '50%';
-    audioElement.style.width = "50%";
-    audioElement.style.transform = 'translateX(-50%)';  // Adjust for centering
-    audioElement.style.maxWidth = '350px';  // Set a fixed width
-    audioElement.style.zIndex = '1000';  // Ensure it's on top of the 3D scene
-    audioElement.style.opacity = '0.60';
-    audioElement.style.borderRadius = '28px'; // Rounded corners
-    audioElement.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.19)'; // Adds a soft shadow for 3D effect
+    audioElement.classList.add('audio-player'); // Custom class for styling
+    audioElement.style.display = 'none'; // Hide the player when the song stops
 
     // Add the audio element to the document body
     document.body.appendChild(audioElement);
@@ -271,11 +262,12 @@ function onMouseClick(event) {
         window.audioElement.pause();  // Stop the audio
         window.audioElement.currentTime = 0;  // Reset the audio to the start
         console.log('Audio stopped.');
+        window.audioElement.style.display = 'none'; // Hide the player when the song stops
         playingCube = null;  // Clear the playing cube reference
       } else {
         // Construct the full path to the audio file using basePath, folder, and audioFile
         const songPath = `${config.basePath}${experience.folder}/${config.audioFile}`;
-        
+    
         // Log to verify path construction
         console.log(`Attempting to play: ${songPath}`);
 
@@ -284,15 +276,20 @@ function onMouseClick(event) {
           window.audioElement.pause();  // Stop the previous audio
           window.audioElement.currentTime = 0;  // Reset the audio to the start
           console.log('Previous audio stopped.');
+          window.audioElement.style.display = 'none';  // Hide the player when switching songs
         }
 
         // Set the new audio source and play the song
         window.audioElement.src = songPath;
+
+        // Play the new audio and ensure the player is displayed only if the audio plays successfully
         window.audioElement.play().then(() => {
           console.log('Audio is playing.');
+          window.audioElement.style.display = 'block'; // Show the player when the song starts
           playingCube = cube;  // Set the currently playing cube
         }).catch(error => {
           console.error('Audio play failed:', error);
+          window.audioElement.style.display = 'none'; // Hide player if the audio play fails
         });
       }
     }
@@ -458,4 +455,4 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.4g');
+console.log('Version 0.0.4i');
