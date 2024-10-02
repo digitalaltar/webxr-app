@@ -41,7 +41,7 @@ function init() {
     css3DRenderer.domElement.style.pointerEvents = 'none';
 
   // Set the background color of the scene to a sky-like color
-  scene.background = new THREE.Color(0x87CEEB); // Light sky-blue background
+  scene.background = new THREE.Color(0xead6e5); // Light sky-blue background
   
   // Setup camera
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -455,4 +455,4 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.4i');
+console.log('Version 0.0.5');
