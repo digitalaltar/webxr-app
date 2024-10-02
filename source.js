@@ -287,13 +287,13 @@ function setupDesktopControls() {
     // Add mousedown listener for desktop mode
     window.addEventListener('mousedown', onMouseClick, false);
 
-    // Add a touchstart listener for mobile
-    window.addEventListener('touchstart', onTouchStart, false);
+    // Add a touchend listener for mobile
+    window.addEventListener('touchend', onTouchEnd, false);
 
 }
 
 // Function to handle touchstart event by simulating a mousedown event
-function onTouchStart(event) {
+function onTouchEnd(event) {
     // Prevent default behavior (such as scrolling or zooming)
     event.preventDefault();
     
@@ -366,4 +366,4 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.3m');
+console.log('Version 0.0.3n');
