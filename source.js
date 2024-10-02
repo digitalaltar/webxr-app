@@ -286,6 +286,29 @@ function setupDesktopControls() {
 
     // Add mousedown listener for desktop mode
     window.addEventListener('mousedown', onMouseClick, false);
+
+    // Add a touchstart listener for mobile
+    window.addEventListener('touchstart', onTouchStart, false);
+
+}
+
+// Function to handle touchstart event by simulating a mousedown event
+function onTouchStart(event) {
+    // Prevent default behavior (such as scrolling or zooming)
+    event.preventDefault();
+    
+    // Use the first touch point (in case of multitouch)
+    const touch = event.changedTouches[0];
+
+    // Simulate a mouse click based on touch position
+    const simulatedEvent = new MouseEvent('mousedown', {
+        clientX: touch.clientX,   // Use the touch's X position
+        clientY: touch.clientY,   // Use the touch's Y position
+        bubbles: true             // Allow event bubbling
+    });
+
+    // Dispatch the simulated event so it gets handled by the onMouseClick function
+    event.target.dispatchEvent(simulatedEvent);
 }
 
 // Animate function
@@ -343,4 +366,4 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.3l');
+console.log('Version 0.0.3m');
