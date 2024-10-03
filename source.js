@@ -676,5 +676,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.9n');
+console.log('Version 0.0.9o');
 
