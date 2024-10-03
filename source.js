@@ -21,6 +21,7 @@ let cloudOpacities = [];
 let isWebXR = false;  // Track whether we're in WebXR mode
 let css3DRenderer;
 let config;
+let currentCubeIndex = 0; // Track the index of the currently playing cube
 
 // Simplex noise for organic movement
 const noise2D = createNoise2D();  // Create the noise generator
@@ -133,7 +134,23 @@ function createAudioPlayerInScene() {
     audioElement.addEventListener('pause', hideAudioPlayer);
     audioElement.addEventListener('seeking', showAudioPlayer);
     audioElement.addEventListener('seeked', showAudioPlayer);
-    audioElement.addEventListener('ended', hideAudioPlayer);
+    audioElement.addEventListener('ended', () => {
+      console.log('Audio ended, moving to the next cube.');
+      
+      // Deactivate the current cube (reset its state)
+      if (playingCube) {
+        resetCubeState(playingCube);
+        playingCube = null; // Clear the playingCube reference
+      }
+      
+      // Find the next cube in the sequence
+      currentCubeIndex = (currentCubeIndex + 1) % albumCovers.length;  // Loop to the first cube after the last one
+      const nextCube = albumCovers[currentCubeIndex];
+      const nextExperience = config.experiences[currentCubeIndex];
+      
+      // Activate the next cube and play its audio
+      handleAudioPlayback(nextCube, nextExperience, currentCubeIndex);
+    });
 
     // Event listener to show the player when audio plays
     audioElement.addEventListener('play', showAudioPlayer);
@@ -292,7 +309,13 @@ function onMouseClick(event) {
 
     // Handle audio playback for the clicked cube
     if (experience) {
-      handleAudioPlayback(cube, experience);
+        const clickedCubeIndex = config.experiences.findIndex(e => e.name === cube.name);
+
+        // Update currentCubeIndex to match the clicked cube
+        currentCubeIndex = clickedCubeIndex;
+
+        // Handle audio playback for the clicked cube
+        handleAudioPlayback(cube, experience, currentCubeIndex);
     }
 
     // Reset the previously clicked cube and playing cube if necessary
@@ -346,7 +369,7 @@ function resetCubeState(cube) {
 }
 
 // Handle audio playback
-function handleAudioPlayback(cube, experience) {
+function handleAudioPlayback(cube, experience, index) {
   if (playingCube === cube) {
     if (!window.audioElement.paused) {
       window.audioElement.pause();
@@ -373,6 +396,7 @@ function handleAudioPlayback(cube, experience) {
       console.log('Audio is playing.');
       window.audioElement.style.display = 'block';
       playingCube = cube;
+      currentCubeIndex = index; // Store the index of the current cube
       activateCube(cube);  // Activate the cube when new audio starts
     }).catch(error => {
       console.error('Audio play failed:', error);
@@ -502,5 +526,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.6d');
+console.log('Version 0.0.7');
 
