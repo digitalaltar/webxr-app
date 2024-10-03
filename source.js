@@ -215,22 +215,22 @@ function setupAudioAnalysis() {
       // Create AudioContext on first user interaction (not tied to audioElement.play())
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-      // Resume the context if it's suspended
+      // Resume the context if suspended
       if (audioContext.state === 'suspended') {
-        audioContext.resume().catch((error) => {
-          console.error('Error resuming AudioContext:', error);
+        audioContext.resume().then(() => {
+          console.log('AudioContext resumed');
         });
       }
 
-      // Set up MediaElementSourceNode and Analyser once
+      // Setup the Analyser and source
       if (!audioElement.sourceNode) {
         const analyser = audioContext.createAnalyser();
-        const source = audioContext.createMediaElementSource(audioElement);  // Create source node once
+        const source = audioContext.createMediaElementSource(audioElement);
 
         source.connect(analyser);
         analyser.connect(audioContext.destination);
 
-        analyser.fftSize = 64;
+        analyser.fftSize = 64;  // Adjust this value for granularity
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
 
