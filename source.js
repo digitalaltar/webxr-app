@@ -35,15 +35,6 @@ const gazeDuration = 2000; // 2 seconds of gaze to trigger interaction
 // Initialize the scene
 function init() {
 
-  // Add this snippet early in the initialization process
-  window.addEventListener('click', () => {
-    if (audioContext.state === 'suspended') {
-      audioContext.resume().then(() => {
-        console.log('AudioContext resumed on first interaction.');
-      });
-    }
-  }, { once: true });
-
   scene = new THREE.Scene();
 
     // Setup CSS3DRenderer
@@ -219,41 +210,26 @@ function createAudioPlayerInScene() {
 function setupAudioAnalysis() {
   const audioElement = document.getElementById('audio-player');
 
-  // Set up event listeners for first interaction (both desktop and mobile)
-  const initAudioContext = () => {
-    if (!audioContext) {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-      if (audioContext.state === 'suspended') {
-        audioContext.resume().then(() => {
-          console.log('AudioContext resumed');
-        }).catch((error) => {
-          console.error('AudioContext resume failed:', error);
-        });
-      }
+    if (!audioElement.sourceNode) {
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaElementSource(audioElement);
 
-      if (!audioElement.sourceNode) {
-        const analyser = audioContext.createAnalyser();
-        const source = audioContext.createMediaElementSource(audioElement);
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
 
-        source.connect(analyser);
-        analyser.connect(audioContext.destination);
+      analyser.fftSize = 64;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
 
-        analyser.fftSize = 64;
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-
-        // Store sourceNode and analyser globally
-        audioElement.sourceNode = source;
-        window.analyser = analyser;
-        window.dataArray = dataArray;
-      }
+      // Store sourceNode and analyser globally
+      audioElement.sourceNode = source;
+      window.analyser = analyser;
+      window.dataArray = dataArray;
     }
-  };
-
-  // Listen for both mouse and touch events for first interaction
-  window.addEventListener('touchend', initAudioContext, { once: true });
-  window.addEventListener('mouseup', initAudioContext, { once: true });
+  }
 }
 
 // Sound Wave Bars
@@ -479,8 +455,6 @@ function resetCubeState(cube) {
 // Handle audio playback
 function handleAudioPlayback(cube, experience, index) {
 
-  setupAudioAnalysis();
-
   const songIndex = currentCubeIndex + 1;
 
   if (playingCube === cube) {
@@ -526,6 +500,8 @@ function handleAudioPlayback(cube, experience, index) {
 
 // Update Now Playing
 function updateNowPlaying(songIndex, cubeName) {
+
+    setupAudioAnalysis();
 
     // Create a new span element
     const nowPlayingSpan = document.createElement('span');
@@ -692,5 +668,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.9t');
+console.log('Version 0.0.9v');
 
