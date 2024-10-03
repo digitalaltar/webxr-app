@@ -5,6 +5,8 @@ import { VRButton } from 'three/examples/jsm/webxr/VRButton';
 import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory'; // Keep this for future VR
 import { createNoise2D } from 'simplex-noise';  // Use named export
 import { CSS3DRenderer, CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
 // Variables
 let scene, camera, renderer, controls;
@@ -46,8 +48,8 @@ function init() {
   
   // Setup camera
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(1, 2, 5);
-  camera.lookAt(new THREE.Vector3(0, 1.6, 0));  // Ensure the camera is looking straight ahead
+  camera.position.set(0, 1, 5);
+  camera.lookAt(new THREE.Vector3(0, 7, 0));  // Ensure the camera is looking straight ahead
 
   // Setup renderer with WebXR support
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -90,9 +92,42 @@ function init() {
   // Add audio player
     createAudioPlayerInScene();
 
+  // Load the background model
+  loadBackgroundModel();
+
   // Start the animation loop
   animate();
   requestAnimationFrame(animateSpin);
+}
+
+// Load the GLB model
+function loadBackgroundModel() {
+  const loader = new GLTFLoader();
+
+  // Set up Draco loader
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath('./wasm/'); // Path to Draco decoder files
+  loader.setDRACOLoader(dracoLoader);
+
+  const modelUrl = './scene/first-sequence.glb'; // Set path to your GLB model
+
+  loader.load(modelUrl, (gltf) => {
+    const model = gltf.scene;
+
+    model.position.set(0, -3, -13); // Position the model in the background
+    model.scale.set(8, 8, 8); // Scale the model 2x in all directions
+
+    model.traverse((child) => {
+      if (child.isMesh) {
+        child.material.emissive.set(0xFFFFFF); // Set emissive color (green here)
+        child.material.emissiveIntensity = 0.50; // Set lightness/emission intensity
+        child.material.transparent = true;
+        child.material.opacity = .50; // Set opacity (0.0 to 1.0)
+      }
+    });
+
+    scene.add(model);
+  });
 }
 
 // Create Audio Player
@@ -288,7 +323,7 @@ function createAlbumCovers(config) {
       const cube = new THREE.Mesh(geometry, cubeMaterialClone);
       
       // Position each cube with some spacing, and bring closer (Z=-1.5)
-      cube.position.set(-2 + index * 2, 1, -1.5); // Adjust the spacing and Z position
+      cube.position.set(-2 + index * 2, 0, 0); // Adjust the spacing and Z position
       cube.originalPosition = cube.position.clone();  // Store the original position
       cube.name = experience.name;
       
@@ -560,5 +595,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.7a');
+console.log('Version 0.0.8d');
 

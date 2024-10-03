@@ -151,3 +151,15 @@ body {
         transform: translateX(-100%);
     }
 }
+#sound-wave {
+  display: flex;
+  align-items: center;
+  height: 25px; /* Keep the equalizer height low */
+}
+.wave-bar {
+  width: 3px;  /* Narrow bars */
+  height: 5px; /* Small base height */
+  margin: 0 1px;
+  background-color: #a17210;  /* Bar color */
+  transition: height 0.1s ease-in-out;
+}
