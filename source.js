@@ -209,22 +209,23 @@ function createAudioPlayerInScene() {
 function setupAudioAnalysis() {
   const audioElement = document.getElementById('audio-player');
 
-  function initializeAudioContext() {
+  // Listen for the first user interaction to create the AudioContext and resume if suspended
+  window.addEventListener('click', () => {
     if (!audioContext) {
+      // Create AudioContext on first user interaction (not tied to audioElement.play())
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
+      // Resume the context if suspended
       if (audioContext.state === 'suspended') {
         audioContext.resume().then(() => {
           console.log('AudioContext resumed');
-        }).catch((error) => {
-          console.error('Error resuming AudioContext:', error);
         });
       }
 
-      // Set up MediaElementSourceNode and AnalyserNode
+      // Set up MediaElementSourceNode and Analyser once
       if (!audioElement.sourceNode) {
         const analyser = audioContext.createAnalyser();
-        const source = audioContext.createMediaElementSource(audioElement);
+        const source = audioContext.createMediaElementSource(audioElement);  // Create source node once
 
         source.connect(analyser);
         analyser.connect(audioContext.destination);
@@ -239,11 +240,7 @@ function setupAudioAnalysis() {
         window.dataArray = dataArray;
       }
     }
-  }
-
-  // Only trigger on user interaction (click or touch)
-  window.addEventListener('click', initializeAudioContext, { once: true });
-  window.addEventListener('touchend', initializeAudioContext, { once: true });
+  }, { once: true }); // This ensures it runs only on the first user interaction
 }
 
 // Sound Wave Bars
@@ -599,17 +596,6 @@ function onTouchEnd(event) {
 
     // Dispatch the simulated event so it gets handled by the onMouseClick function
     event.target.dispatchEvent(simulatedEvent);
-
-  // Initialize AudioContext and play audio on touch (ensure for mobile)
-  if (!audioContext) {
-    setupAudioAnalysis();  // Ensure AudioContext is set up properly
-  }
-
-  if (window.audioElement.paused) {
-    window.audioElement.play().catch((error) => {
-      console.log('Audio play blocked by browser, waiting for user gesture.');
-    });
-  }
 }
 
 // Animate function
@@ -687,5 +673,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.9l');
+console.log('Version 0.0.9k');
 
