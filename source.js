@@ -34,6 +34,16 @@ const gazeDuration = 2000; // 2 seconds of gaze to trigger interaction
 
 // Initialize the scene
 function init() {
+
+  // Add this snippet early in the initialization process
+  window.addEventListener('click', () => {
+    if (audioContext && audioContext.state === 'suspended') {
+      audioContext.resume().then(() => {
+        console.log('AudioContext resumed on first interaction.');
+      });
+    }
+  }, { once: true });
+
   scene = new THREE.Scene();
 
     // Setup CSS3DRenderer
@@ -242,8 +252,8 @@ function setupAudioAnalysis() {
   };
 
   // Listen for both mouse and touch events for first interaction
-  window.addEventListener('mouseup', initAudioContext );
-  window.addEventListener('touchend', initAudioContext );
+  window.addEventListener('touchend', initAudioContext, { once: true });
+  window.addEventListener('mouseup', initAudioContext, { once: true });
 }
 
 // Sound Wave Bars
@@ -676,5 +686,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.9o');
+console.log('Version 0.0.9p');
 
