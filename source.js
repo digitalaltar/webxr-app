@@ -418,15 +418,25 @@ function handleAudioPlayback(cube, experience, index) {
   }
 }
 
-// Update song name
+// Update Now Playing
 function updateNowPlaying(songIndex, cubeName) {
-    window.cubeNameHeading.textContent = '';  // Clear previous content
+    window.cubeNameHeading.innerHTML = 'Now Playing: ';  // Set static text
 
-    // Create and append the new content in one swoop
-    window.cubeNameHeading.appendChild(document.createTextNode('Now Playing: '));
-    const span = document.createElement('span');
+    // Create the container for scrolling text if it doesn't exist
+    let scrollContainer = window.cubeNameHeading.querySelector('.scroll-container');
+    if (!scrollContainer) {
+        scrollContainer = document.createElement('span');
+        scrollContainer.classList.add('scroll-container');
+        window.cubeNameHeading.appendChild(scrollContainer);
+    }
+
+    // Create or update the scrolling text
+    let span = scrollContainer.querySelector('span');
+    if (!span) {
+        span = document.createElement('span');
+        scrollContainer.appendChild(span);
+    }
     span.textContent = `Track ${songIndex} - ${cubeName}`;
-    window.cubeNameHeading.appendChild(span);
 }
 
 // Function to animate the spinning cubes
@@ -550,5 +560,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.8');
+console.log('Version 0.0.7a');
 

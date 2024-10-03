@@ -110,14 +110,44 @@ body {
     z-index: 1000;  /* Ensure it's on top of the 3D scene */
     display: none;
 }
-#cube-name-heading {
-    color: white;
-    margin: 0 0 10px 10px;
-    font-family: Courier New;
-    font-size: 1rem;
-    color: #a17210;
-    font-weight: 400;
-}
 #audio-player {
     opacity: 0.60;
+    width: 100%;
+}
+#cube-name-heading {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1rem;
+    color: #FFFFFF;
+    font-weight: 400;
+    position: relative;
+    background: rgba(161,114,16, 0.5);
+    border-radius: 8px;
+    padding: 5px 10px;
+    margin: 0 auto 10px auto;
+    vertical-align: middle;
+}
+
+#cube-name-heading .scroll-container {
+    display: inline-block;
+    width: 205px;
+    overflow: hidden;
+    vertical-align: middle;
+    margin-bottom: 1px;
+    background: rgba(255,255,255,.75);
+    color: #a17210;
+}
+
+#cube-name-heading .scroll-container span {
+    display: inline-block;
+    white-space: nowrap;
+    animation: scroll-text 10s linear infinite;
+}
+
+@keyframes scroll-text {
+    0% {
+        transform: translateX(100%);
+    }
+    100% {
+        transform: translateX(-100%);
+    }
 }
