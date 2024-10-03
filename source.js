@@ -116,11 +116,17 @@ function createAudioPlayerInScene() {
     // Function to hide the audio player
     function hideAudioPlayer() {
         audioElement.style.display = 'none';
+        if (playingCube) {
+            resetCubeState(playingCube);  // Reset the current playing cube
+        }
     }
 
     // Function to show the audio player
     function showAudioPlayer() {
         audioElement.style.display = 'block';
+        if (playingCube) {
+            activateCube(playingCube);  // Reset the current playing cube
+        }
     }
 
     // Event listeners to hide the player when audio stops
@@ -258,6 +264,7 @@ function createAlbumCovers(config) {
       
       // Position each cube with some spacing, and bring closer (Z=-1.5)
       cube.position.set(-2 + index * 2, 1, -1.5); // Adjust the spacing and Z position
+      cube.originalPosition = cube.position.clone();  // Store the original position
       cube.name = experience.name;
       
       // Add the cube to the scene
@@ -283,91 +290,41 @@ function onMouseClick(event) {
     const cube = intersects[0].object;
     const experience = config.experiences.find(e => e.name === cube.name);
 
-    // If the experience exists, construct the full path to the song
+    // Handle audio playback for the clicked cube
     if (experience) {
-      // If the same cube is clicked again, stop the music
-        if (playingCube === cube) {
-          // If the audio is currently playing, pause it
-          if (!window.audioElement.paused) {
-            window.audioElement.pause();  // Pause the audio
-            console.log('Audio paused.');
-          } else {
-            // If the audio is paused, resume playing from where it left off
-            window.audioElement.play().then(() => {
-              console.log('Audio resumed.');
-              window.audioElement.style.display = 'block'; // Show the player when the song plays
-            }).catch(error => {
-              console.error('Audio resume failed:', error);
-            });
-          }
-        } else {
-          // If a different cube is selected, stop the current audio
-          if (playingCube !== null) {
-            window.audioElement.pause();  // Pause the previous audio
-            console.log('Previous audio paused.');
-            window.audioElement.style.display = 'none';  // Hide the player when switching songs
-          }
-
-          // Construct the full path to the new audio file using basePath, folder, and audioFile
-          const songPath = `${config.basePath}${experience.folder}/${config.audioFile}`;
-
-          // Log to verify path construction
-          console.log(`Attempting to play: ${songPath}`);
-
-          // Set the new audio source
-          window.audioElement.src = songPath;
-
-          // Play the new audio and ensure the player is displayed only if the audio plays successfully
-          window.audioElement.play().then(() => {
-            console.log('Audio is playing.');
-            window.audioElement.style.display = 'block'; // Show the player when the song starts
-            playingCube = cube;  // Set the currently playing cube
-          }).catch(error => {
-            console.error('Audio play failed:', error);
-            window.audioElement.style.display = 'none'; // Hide player if the audio play fails
-          });
-        }
+      handleAudioPlayback(cube, experience);
     }
 
-    // Event listener for when audio naturally ends
-    window.audioElement.onended = () => {
-      console.log('Audio ended.');
-      resetCubeState(cube);  // Reset cube position and stop spinning
-    };
-
-    // Toggle the clicked cube's emissive color and spinning state
-    if (clickedCube !== cube) {
-      // Reset the previously clicked cube's state (stop glow, spin, and move down)
-      if (clickedCube) {
-        clickedCube.material.uniforms.emissive.value.set(0x000000);  // Reset emissive color (no glow)
-        clickedCube.material.uniforms.emissiveIntensity.value = 0;   // Reset emissive intensity
-        clickedCube.position.y -= 0.2;  // Move the cube down
-        spinningCubes.delete(clickedCube);  // Stop spinning the previous cube
-      }
-
-      // Set the new clicked cube
-      clickedCube = cube;
-      clickedCube.material.uniforms.emissive.value.set(0x5D3FD3);  // Set emissive color (glow effect)
-      clickedCube.material.uniforms.emissiveIntensity.value = 1;   // Set emissive intensity
-      clickedCube.position.y += 0.2;  // Move the cube up
-      spinningCubes.add(clickedCube);  // Start spinning the clicked cube
-
-    } else {
-      // If the same cube is clicked again, reset its emissive color and stop spinning
-      clickedCube.material.uniforms.emissive.value.set(0x000000);  // Reset emissive color (no glow)
-      clickedCube.material.uniforms.emissiveIntensity.value = 0;   // Reset emissive intensity
-      clickedCube.position.y -= 0.2;  // Move the cube down 
-      spinningCubes.delete(clickedCube);  // Stop spinning the cube
-      clickedCube = null;  // Deselect the cube
+    // Reset the previously clicked cube and playing cube if necessary
+    if (clickedCube && clickedCube !== cube) {
+      resetCubeState(clickedCube);  // Reset the previous cube's state
+      clickedCube = null;
     }
+
+    if (playingCube && playingCube !== cube) {
+      resetCubeState(playingCube);  // Reset the previous playing cube's state
+      playingCube = null;
+    }
+
+    // Set the newly clicked cube and activate it
+    clickedCube = cube;
+    activateCube(cube);
   }
+}
+
+// Function to activate the cube
+function activateCube(cube) {
+  cube.material.uniforms.emissive.value.set(0x5D3FD3);  // Set glow color
+  cube.material.uniforms.emissiveIntensity.value = 1;   // Set emissive intensity
+  cube.position.y += 0.2;  // Move the cube up
+  spinningCubes.add(cube);  // Start spinning the cube
 }
 
 // Function to reset the cube's state (position, emissive color, and stop spinning)
 function resetCubeState(cube) {
   if (cube) {
     // Reset the cube's position to its original Y position
-    cube.position.y -= 0.2;  // Move the cube back down
+    cube.position.copy(cube.originalPosition);
 
     // Reset the emissive color and intensity
     cube.material.uniforms.emissive.value.set(0x000000);  // Reset emissive color (no glow)
@@ -375,6 +332,42 @@ function resetCubeState(cube) {
 
     // Stop the spinning by removing the cube from the spinningCubes set
     spinningCubes.delete(cube);
+  }
+}
+
+// Handle audio playback
+function handleAudioPlayback(cube, experience) {
+  if (playingCube === cube) {
+    if (!window.audioElement.paused) {
+      window.audioElement.pause();
+      console.log('Audio paused.');
+    } else {
+      window.audioElement.play().then(() => {
+        console.log('Audio resumed.');
+        window.audioElement.style.display = 'block';
+        activateCube(cube);  // Reactivate the cube when audio resumes
+      }).catch(error => {
+        console.error('Audio resume failed:', error);
+      });
+    }
+  } else {
+    if (playingCube) {
+      window.audioElement.pause();
+      resetCubeState(playingCube);  // Reset the previously playing cube
+      console.log('Previous audio paused.');
+      window.audioElement.style.display = 'none';
+    }
+    const songPath = `${config.basePath}${experience.folder}/${config.audioFile}`;
+    window.audioElement.src = songPath;
+    window.audioElement.play().then(() => {
+      console.log('Audio is playing.');
+      window.audioElement.style.display = 'block';
+      playingCube = cube;
+      activateCube(cube);  // Activate the cube when new audio starts
+    }).catch(error => {
+      console.error('Audio play failed:', error);
+      window.audioElement.style.display = 'none';
+    });
   }
 }
 
@@ -499,5 +492,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.5b');
+console.log('Version 0.0.6');
 
