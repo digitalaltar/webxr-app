@@ -37,7 +37,7 @@ function init() {
 
   // Add this snippet early in the initialization process
   window.addEventListener('click', () => {
-    if (audioContext && audioContext.state === 'suspended') {
+    if (audioContext.state === 'suspended') {
       audioContext.resume().then(() => {
         console.log('AudioContext resumed on first interaction.');
       });
@@ -479,6 +479,8 @@ function resetCubeState(cube) {
 // Handle audio playback
 function handleAudioPlayback(cube, experience, index) {
 
+  setupAudioAnalysis();
+
   const songIndex = currentCubeIndex + 1;
 
   if (playingCube === cube) {
@@ -686,5 +688,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.9p');
+console.log('Version 0.0.9s');
 
