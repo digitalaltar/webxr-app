@@ -1,3 +1,28 @@
+// WEBSITE STUFF
+document.addEventListener('DOMContentLoaded', function () {
+  const logo = document.getElementById('logo');
+  const about = document.getElementById('about');
+  const closeAbout = document.getElementById('close');
+
+  // Show #about when the logo is clicked
+  logo.addEventListener('click', function () {
+    about.style.display = 'block';
+  });
+
+  // Close #about when the close button is clicked
+  closeAbout.addEventListener('click', function () {
+    about.style.display = 'none';
+  });
+
+  // Close #about when the Escape key is pressed
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      about.style.display = 'none';
+    }
+  });
+});
+
+// SCENE STUFF
 // Imports
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
