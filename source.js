@@ -4,20 +4,28 @@ document.addEventListener('DOMContentLoaded', function () {
   const about = document.getElementById('about');
   const closeAbout = document.getElementById('close');
 
-  // Show #about when the logo is clicked
-  logo.addEventListener('click', function () {
+  // Function to show the #about section
+  function showAbout() {
     about.style.display = 'block';
-  });
+  }
 
-  // Close #about when the close button is clicked
-  closeAbout.addEventListener('click', function () {
+  // Function to hide the #about section
+  function hideAbout() {
     about.style.display = 'none';
-  });
+  }
+
+  // Show #about when the logo is clicked or touched
+  logo.addEventListener('click', showAbout);
+  logo.addEventListener('touchend', showAbout, { passive: true });
+
+  // Close #about when the close button is clicked or touched
+  closeAbout.addEventListener('click', hideAbout);
+  closeAbout.addEventListener('touchend', hideAbout, { passive: true });
 
   // Close #about when the Escape key is pressed
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
-      about.style.display = 'none';
+      hideAbout();
     }
   });
 });
