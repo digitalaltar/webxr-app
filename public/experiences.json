@@ -6,16 +6,64 @@
   "glbFile": "model.glb",
   "experiences": [
     {
-      "name": "Chlorophyll",
-      "folder": "chlorophyll"
+      "track": "1",
+      "name": "Memorystream",
+      "folder": "memorystream"
     },
     {
+      "track": "2",
+      "name": "Inherited Shadows",
+      "folder": "inherited-shadows"
+    },
+    {
+      "track": "3",
+      "name": "Brass Palm Trees",
+      "folder": "brass-palm-trees"
+    },
+    {
+      "track": "4",
+      "name": "Midland Pulse",
+      "folder": "midland-pulse"
+    },
+    {
+      "track": "5",
+      "name": "Flight to Callisto",
+      "folder": "flight-to-callisto"
+    },
+    {
+      "track": "6",
+      "name": "We Roamed Too Far",
+      "folder": "we-roamed-too-far"
+    },
+    {
+      "track": "7",
+      "name": "The Joy of Leaves",
+      "folder": "the-joy-of-leaves"
+    },
+    {
+      "track": "8",
       "name": "Emergence",
       "folder": "emergence"
     },
     {
+      "track": "9",
       "name": "Prismatica",
       "folder": "prismatica"
+    },
+    {
+      "track": "10",
+      "name": "Orange Cat",
+      "folder": "orange-cat"
+    },
+    {
+      "track": "11",
+      "name": "Chlorophyll",
+      "folder": "chlorophyll"
+    },
+    {
+      "track": "12",
+      "name": "Cicadas Dreaming",
+      "folder": "cicadas-dreaming"
     }
   ]
 }
