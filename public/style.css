@@ -159,3 +159,27 @@ body {
   transform-origin: bottom; /* Anchor the growth at the bottom */
   transition: transform 0.1s ease; /* Smooth transitions on scaling */
 }
+
+@media only screen and (max-width: 768px) {
+  #attribution {
+    width: 100%;
+    text-align: center;
+    padding: 0 0 5px 0;
+    margin: 0 auto;
+  }
+  #cube-name-heading .playing {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  #cube-name-heading .scroll-container {
+      display: block;
+      width: calc(100% - 30px);
+      border: solid 3px rgba(255,255,255,.2);
+      overflow: hidden;
+      vertical-align: middle;
+      background: rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 2px;
+  }
+}
