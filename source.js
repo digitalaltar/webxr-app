@@ -314,10 +314,20 @@ function onMouseClick(event) {
 
 // Function to activate the cube
 function activateCube(cube) {
+  // Ensure the cube has an original position stored
+  if (!cube.originalPosition) {
+    cube.originalPosition = cube.position.clone();  // Store the original position
+  }
+
+  // Set the cube's position to its original position and add 0.1 to the Y-axis
+  const newPosition = cube.originalPosition.clone();
+  newPosition.y += 0.2;
+  cube.position.copy(newPosition);  // Apply the new position with the modified Y value
+
   cube.material.uniforms.emissive.value.set(0x5D3FD3);  // Set glow color
   cube.material.uniforms.emissiveIntensity.value = 1;   // Set emissive intensity
-  cube.position.y += 0.2;  // Move the cube up
   spinningCubes.add(cube);  // Start spinning the cube
+  console.log('cube activated');
 }
 
 // Function to reset the cube's state (position, emissive color, and stop spinning)
@@ -492,5 +502,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.6');
+console.log('Version 0.0.6d');
 
