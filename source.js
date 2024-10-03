@@ -209,13 +209,11 @@ function createAudioPlayerInScene() {
 function setupAudioAnalysis() {
   const audioElement = document.getElementById('audio-player');
 
-  // Listen for the first user interaction to create the AudioContext and resume if suspended
-  window.addEventListener('click', () => {
+  // Set up event listeners for first interaction (both desktop and mobile)
+  const initAudioContext = () => {
     if (!audioContext) {
-      // Create AudioContext on first user interaction (not tied to audioElement.play())
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-      // Ensure the context is resumed (Safari-specific fix)
       if (audioContext.state === 'suspended') {
         audioContext.resume().then(() => {
           console.log('AudioContext resumed');
@@ -224,7 +222,6 @@ function setupAudioAnalysis() {
         });
       }
 
-      // Set up the MediaElementSourceNode and AnalyserNode if not already done
       if (!audioElement.sourceNode) {
         const analyser = audioContext.createAnalyser();
         const source = audioContext.createMediaElementSource(audioElement);
@@ -242,7 +239,11 @@ function setupAudioAnalysis() {
         window.dataArray = dataArray;
       }
     }
-  }, { once: true }); // This ensures it runs only on the first user interaction
+  };
+
+  // Listen for both mouse and touch events for first interaction
+  window.addEventListener('mouseup', initAudioContext, { once: true });
+  window.addEventListener('touchend', initAudioContext, { once: true });
 }
 
 // Sound Wave Bars
@@ -676,5 +677,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.9m');
+console.log('Version 0.0.9n');
 
