@@ -10,26 +10,6 @@ body {
   overflow: hidden;
   font-family: sans-serif;
 }
-#experience-menu {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  z-index: 100;
-}
-.thumb {
-  max-width: 5em;
-  cursor: pointer;
-  margin: 0 10px 0 0;
-  border-radius: 4px;
-  transition: all 0.4s ease-in-out;
-  filter: brightness(.6);
-  opacity: .6;
-}
-.thumb:hover, .thumb:active, .selected {
-  filter: brightness(1);
-  transform: scale(1.05);
-  opacity: 1;
-}
 #attribution { 
   position: absolute;
   bottom: 10px;
@@ -102,7 +82,7 @@ body {
 }
 #media-container {
     position: fixed;
-    bottom: 60px;
+    bottom: 50px;
     left: 50%;
     width: 50%;
     max-width: 350px;
@@ -122,11 +102,9 @@ body {
     position: relative;
     border-radius: 8px;
     padding: 5px 10px;
-    margin: 0 auto 10px auto;
     vertical-align: middle;
     width: 100%;
 }
-
 #cube-name-heading .playing {
   display: inline-block;
   width: 100px;
@@ -134,11 +112,10 @@ body {
 #cube-name-heading .scroll-container {
     display: inline-block;
     width: calc(100% - 130px);
-    border: solid 3px rgba(255,255,255,.3);
+    border: solid 3px rgba(255,255,255,.2);
     overflow: hidden;
     vertical-align: middle;
-    margin-bottom: 1px;
-    background: rgba(255,255,255,.5);
+    background: rgba(255,255,255,.3);
     border-radius: 6px;
     padding: 2px;
 }
@@ -147,11 +124,15 @@ body {
     display: inline-block;
     white-space: nowrap;
     animation: scroll-text 10s linear infinite;
+    text-align: center;
+    color: #a17210;
+    opacity: 1;
+    letter-spacing: 0.02rem;
 }
 
 @keyframes scroll-text {
     0% {
-        transform: translateX(100%);
+        transform: translateX(150%);
     }
     100% {
         transform: translateX(-100%);
@@ -160,9 +141,9 @@ body {
 #sound-wave {
   max-width: 90%;
   position: relative;
+  bottom: -15px;
   left: calc(50% - 12px);
   transform: translateX(-50%);
-  bottom: -13px;
   display: flex;
   align-items: center;
   height: 25px; /* Keep the equalizer height low */
