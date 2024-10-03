@@ -125,6 +125,8 @@ function createAudioPlayerInScene() {
 
     // Event listeners to hide the player when audio stops
     audioElement.addEventListener('pause', hideAudioPlayer);
+    audioElement.addEventListener('seeking', showAudioPlayer);
+    audioElement.addEventListener('seeked', showAudioPlayer);
     audioElement.addEventListener('ended', hideAudioPlayer);
 
     // Event listener to show the player when audio plays
@@ -498,3 +500,4 @@ window.addEventListener('resize', () => {
 init();
 
 console.log('Version 0.0.5b');
+
