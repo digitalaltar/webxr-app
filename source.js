@@ -242,8 +242,8 @@ function setupAudioAnalysis() {
   };
 
   // Listen for both mouse and touch events for first interaction
-  window.addEventListener('mouseup', initAudioContext, { once: true });
-  window.addEventListener('touchend', initAudioContext, { once: true });
+  window.addEventListener('mouseup', initAudioContext );
+  window.addEventListener('touchend', initAudioContext );
 }
 
 // Sound Wave Bars
@@ -580,7 +580,6 @@ function setupDesktopControls() {
 
     // Add a touchend listener for mobile
     window.addEventListener('touchend', onTouchEnd, false);
-
 }
 
 // Function to handle touchstart event by simulating a mousedown event
