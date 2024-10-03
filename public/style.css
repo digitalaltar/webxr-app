@@ -100,7 +100,7 @@ body {
   color: #a17210;
   opacity: 0.5;
 }
-.audio-player {
+#media-container {
     position: fixed;
     bottom: 60px;
     left: 50%;
@@ -108,6 +108,16 @@ body {
     max-width: 350px;
     transform: translateX(-50%);
     z-index: 1000;  /* Ensure it's on top of the 3D scene */
-    opacity: 0.60;
     display: none;
+}
+#cube-name-heading {
+    color: white;
+    margin: 0 0 10px 10px;
+    font-family: Courier New;
+    font-size: 1rem;
+    color: #a17210;
+    font-weight: 400;
+}
+#audio-player {
+    opacity: 0.60;
 }

@@ -97,26 +97,34 @@ function init() {
 
 // Create Audio Player
 function createAudioPlayerInScene() {
-    // Create an HTML5 audio player
+    // Create a container div for both the audio player and the cube name
+    const container = document.createElement('div');
+    container.id = 'media-container';  // Use the CSS class
+    document.body.appendChild(container);
+
+    // Create a heading for the cube name
+    const cubeNameHeading = document.createElement('h3');
+    cubeNameHeading.id = 'cube-name-heading';  // Use the CSS class
+    container.appendChild(cubeNameHeading);
+
+    // Create the audio element
     const audioElement = document.createElement('audio');
+    audioElement.id = 'audio-player';
     audioElement.controls = true;
     audioElement.src = ''; // Your audio source
+    container.appendChild(audioElement);
 
-    // Custom class for styling
-    audioElement.classList.add('audio-player');
-    
-    // Initially hide the audio player
-    audioElement.style.display = 'none';
+    // Hide the container initially
+    container.style.display = 'none';
 
-    // Append the audio element to the document body
-    document.body.appendChild(audioElement);
-
-    // Store reference for later use
+    // Store the audio element and the heading for later reference
     window.audioElement = audioElement;
+    window.cubeNameHeading = cubeNameHeading;
+    window.audioContainer = container;
 
     // Function to hide the audio player
     function hideAudioPlayer() {
-        audioElement.style.display = 'none';
+        container.style.display = 'none';
         if (playingCube) {
             resetCubeState(playingCube);  // Reset the current playing cube
         }
@@ -124,7 +132,7 @@ function createAudioPlayerInScene() {
 
     // Function to show the audio player
     function showAudioPlayer() {
-        audioElement.style.display = 'block';
+        container.style.display = 'block';
         if (playingCube) {
             activateCube(playingCube);  // Reset the current playing cube
         }
@@ -370,6 +378,9 @@ function resetCubeState(cube) {
 
 // Handle audio playback
 function handleAudioPlayback(cube, experience, index) {
+
+  const songIndex = currentCubeIndex + 1;
+
   if (playingCube === cube) {
     if (!window.audioElement.paused) {
       window.audioElement.pause();
@@ -378,6 +389,7 @@ function handleAudioPlayback(cube, experience, index) {
       window.audioElement.play().then(() => {
         console.log('Audio resumed.');
         window.audioElement.style.display = 'block';
+        updateNowPlaying(songIndex, cube.name);
         activateCube(cube);  // Reactivate the cube when audio resumes
       }).catch(error => {
         console.error('Audio resume failed:', error);
@@ -395,6 +407,7 @@ function handleAudioPlayback(cube, experience, index) {
     window.audioElement.play().then(() => {
       console.log('Audio is playing.');
       window.audioElement.style.display = 'block';
+      updateNowPlaying(songIndex, cube.name);
       playingCube = cube;
       currentCubeIndex = index; // Store the index of the current cube
       activateCube(cube);  // Activate the cube when new audio starts
@@ -403,6 +416,17 @@ function handleAudioPlayback(cube, experience, index) {
       window.audioElement.style.display = 'none';
     });
   }
+}
+
+// Update song name
+function updateNowPlaying(songIndex, cubeName) {
+    window.cubeNameHeading.textContent = '';  // Clear previous content
+
+    // Create and append the new content in one swoop
+    window.cubeNameHeading.appendChild(document.createTextNode('Now Playing: '));
+    const span = document.createElement('span');
+    span.textContent = `Track ${songIndex} - ${cubeName}`;
+    window.cubeNameHeading.appendChild(span);
 }
 
 // Function to animate the spinning cubes
@@ -526,5 +550,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.7');
+console.log('Version 0.0.8');
 
