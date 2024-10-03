@@ -215,17 +215,19 @@ function setupAudioAnalysis() {
       // Create AudioContext on first user interaction (not tied to audioElement.play())
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-      // Resume the context if suspended
+      // Ensure the context is resumed (Safari-specific fix)
       if (audioContext.state === 'suspended') {
         audioContext.resume().then(() => {
           console.log('AudioContext resumed');
+        }).catch((error) => {
+          console.error('AudioContext resume failed:', error);
         });
       }
 
-      // Set up MediaElementSourceNode and Analyser once
+      // Set up the MediaElementSourceNode and AnalyserNode if not already done
       if (!audioElement.sourceNode) {
         const analyser = audioContext.createAnalyser();
-        const source = audioContext.createMediaElementSource(audioElement);  // Create source node once
+        const source = audioContext.createMediaElementSource(audioElement);
 
         source.connect(analyser);
         analyser.connect(audioContext.destination);
