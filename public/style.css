@@ -116,25 +116,31 @@ body {
 }
 #cube-name-heading {
     font-family: 'Courier New', Courier, monospace;
-    font-size: 1rem;
-    color: #FFFFFF;
+    font-size: 0.8rem;
+    color: #a17210;
     font-weight: 400;
     position: relative;
-    background: rgba(161,114,16, 0.5);
     border-radius: 8px;
     padding: 5px 10px;
     margin: 0 auto 10px auto;
     vertical-align: middle;
+    width: 100%;
 }
 
+#cube-name-heading .playing {
+  display: inline-block;
+  width: 100px;
+}
 #cube-name-heading .scroll-container {
     display: inline-block;
-    width: 205px;
+    width: calc(100% - 130px);
+    border: solid 3px rgba(255,255,255,.3);
     overflow: hidden;
     vertical-align: middle;
     margin-bottom: 1px;
-    background: rgba(255,255,255,.75);
-    color: #a17210;
+    background: rgba(255,255,255,.5);
+    border-radius: 6px;
+    padding: 2px;
 }
 
 #cube-name-heading .scroll-container span {
@@ -152,14 +158,23 @@ body {
     }
 }
 #sound-wave {
+  max-width: 90%;
+  position: relative;
+  left: calc(50% - 12px);
+  transform: translateX(-50%);
+  bottom: -13px;
   display: flex;
   align-items: center;
   height: 25px; /* Keep the equalizer height low */
 }
 .wave-bar {
-  width: 3px;  /* Narrow bars */
-  height: 5px; /* Small base height */
-  margin: 0 1px;
-  background-color: #a17210;  /* Bar color */
-  transition: height 0.1s ease-in-out;
+  width: 5px;                
+  height: 10px;
+  background-color: #a17210; /* Customize the color */
+  opacity: .5;
+  margin: 0 2px;             
+  display: inline-block;
+  vertical-align: bottom;   /* Bars will grow from the bottom */
+  transform-origin: bottom; /* Anchor the growth at the bottom */
+  transition: transform 0.1s ease; /* Smooth transitions on scaling */
 }

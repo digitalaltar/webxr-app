@@ -24,6 +24,7 @@ let isWebXR = false;  // Track whether we're in WebXR mode
 let css3DRenderer;
 let config;
 let currentCubeIndex = 0; // Track the index of the currently playing cube
+let audioContext;
 
 // Simplex noise for organic movement
 const noise2D = createNoise2D();  // Create the noise generator
@@ -97,7 +98,6 @@ function init() {
 
   // Start the animation loop
   animate();
-  requestAnimationFrame(animateSpin);
 }
 
 // Load the GLB model
@@ -203,6 +203,56 @@ function createAudioPlayerInScene() {
         audioElement.style.display = 'block';
         audioElement.play(); // Start playing when shown
     };
+}
+
+// Audio Analysis Setup
+function setupAudioAnalysis() {
+  const audioElement = document.getElementById('audio-player');
+
+  // Listen for the first user interaction to create the AudioContext and resume if suspended
+  window.addEventListener('click', () => {
+    if (!audioContext) {
+      // Create AudioContext on first user interaction (not tied to audioElement.play())
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+      // Resume the context if it's suspended
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().catch((error) => {
+          console.error('Error resuming AudioContext:', error);
+        });
+      }
+
+      // Set up MediaElementSourceNode and Analyser once
+      if (!audioElement.sourceNode) {
+        const analyser = audioContext.createAnalyser();
+        const source = audioContext.createMediaElementSource(audioElement);  // Create source node once
+
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+
+        analyser.fftSize = 64;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        // Store sourceNode and analyser globally
+        audioElement.sourceNode = source;
+        window.analyser = analyser;
+        window.dataArray = dataArray;
+      }
+    }
+  }, { once: true }); // This ensures it runs only on the first user interaction
+}
+
+// Sound Wave Bars
+function createSoundWave() {
+  const waveContainer = document.getElementById('sound-wave');
+  waveContainer.innerHTML = ''; // Clear previous bars
+
+  for (let i = 0; i < 32; i++) {
+    const bar = document.createElement('div');
+    bar.classList.add('wave-bar');
+    waveContainer.appendChild(bar);
+  }
 }
 
 // Add cloud particles to the scene
@@ -455,7 +505,19 @@ function handleAudioPlayback(cube, experience, index) {
 
 // Update Now Playing
 function updateNowPlaying(songIndex, cubeName) {
-    window.cubeNameHeading.innerHTML = 'Now Playing: ';  // Set static text
+
+    // Create a new span element
+    const nowPlayingSpan = document.createElement('span');
+    nowPlayingSpan.classList.add('playing');  // Add the "playing" class
+    nowPlayingSpan.textContent = 'Now Playing';  // Set the text content
+
+    // Clear previous content in cubeNameHeading
+    while (window.cubeNameHeading.firstChild) {
+        window.cubeNameHeading.removeChild(window.cubeNameHeading.firstChild);
+    }
+
+    // Append the new span to cubeNameHeading
+    window.cubeNameHeading.appendChild(nowPlayingSpan);
 
     // Create the container for scrolling text if it doesn't exist
     let scrollContainer = window.cubeNameHeading.querySelector('.scroll-container');
@@ -472,19 +534,18 @@ function updateNowPlaying(songIndex, cubeName) {
         scrollContainer.appendChild(span);
     }
     span.textContent = `Track ${songIndex} - ${cubeName}`;
-}
 
-// Function to animate the spinning cubes
-function animateSpin() {
-  const spinSpeed = 0.01; // Adjust the spin speed
+    // Add sound wave container if not already present
+    let soundWave = document.getElementById('sound-wave');
+    if (!soundWave) {
+        soundWave = document.createElement('div');
+        soundWave.id = 'sound-wave';
+        window.cubeNameHeading.appendChild(soundWave);  // Append to the heading area
+    }
 
-  // Loop over each cube in the spinning set and rotate it
-  spinningCubes.forEach(cube => {
-    cube.rotation.y += spinSpeed; // Rotate around the Y-axis
-  });
-
-  // Continue the animation loop
-  requestAnimationFrame(animateSpin);
+    // Clear old bars and create the new sound wave bars
+    createSoundWave();
+    setupAudioAnalysis();
 }
 
 // Setup VR/WebXR for inline mode (non-immersive)
@@ -539,7 +600,6 @@ function onTouchEnd(event) {
 
 // Animate function
 function animate() {
-  requestAnimationFrame(animate);
 
   const positions = clouds.geometry.attributes.position.array;
   const time = performance.now() * 0.001;  // Time variable for smooth transitions
@@ -575,6 +635,23 @@ function animate() {
   // Notify Three.js that the positions have been updated
   clouds.geometry.attributes.position.needsUpdate = true;
 
+  // Rotate spinning cubes
+  const spinSpeed = 0.01; // Adjust the spin speed
+  spinningCubes.forEach(cube => {
+    cube.rotation.y += spinSpeed; // Rotate around the Y-axis
+  });
+
+  // Audio Analysis
+  if (window.analyser && window.dataArray) {
+    window.analyser.getByteFrequencyData(window.dataArray);
+    const bars = document.querySelectorAll('.wave-bar');
+    
+    bars.forEach((bar, index) => {
+      const scaleY = (window.dataArray[index] / 255) * 2;  // Adjust the scale factor as needed
+      bar.style.transform = `scaleY(${scaleY})`;
+    });
+  }
+
   if (controls) {
     controls.update();  // Update controls for OrbitControls
   }
@@ -583,6 +660,7 @@ function animate() {
     renderer.render(scene, camera);
     css3DRenderer.render(scene, camera);
 
+  requestAnimationFrame(animate);
 }
 
 // Resize handler
@@ -595,5 +673,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.8d');
+console.log('Version 0.0.9k');
 
