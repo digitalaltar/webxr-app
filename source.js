@@ -476,6 +476,7 @@ function handleAudioPlayback(cube, experience, index) {
         window.audioElement.style.display = 'block';
         updateNowPlaying(songIndex, cube.name);
         activateCube(cube);  // Reactivate the cube when audio resumes
+        setupAudioAnalysis(); // Initialize audio analysis here
       }).catch(error => {
         console.error('Audio resume failed:', error);
       });
@@ -496,6 +497,7 @@ function handleAudioPlayback(cube, experience, index) {
       playingCube = cube;
       currentCubeIndex = index; // Store the index of the current cube
       activateCube(cube);  // Activate the cube when new audio starts
+      setupAudioAnalysis(); // Initialize audio analysis here
     }).catch(error => {
       console.error('Audio play failed:', error);
       window.audioElement.style.display = 'none';
@@ -545,7 +547,6 @@ function updateNowPlaying(songIndex, cubeName) {
 
     // Clear old bars and create the new sound wave bars
     createSoundWave();
-    setupAudioAnalysis();
 }
 
 // Setup VR/WebXR for inline mode (non-immersive)
@@ -673,5 +674,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.9k');
+console.log('Version 0.0.9m');
 
