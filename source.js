@@ -504,19 +504,23 @@ function handleAudioPlayback(cube, experience, index) {
       console.log('Previous audio paused.');
       window.audioElement.style.display = 'none';
     }
+
     const songPath = `${config.basePath}${experience.folder}/${config.audioFile}`;
     window.audioElement.src = songPath;
-    window.audioElement.play().then(() => {
-      console.log('Audio is playing.');
-      window.audioElement.style.display = 'block';
-      updateNowPlaying(songIndex, cube.name);
-      playingCube = cube;
-      currentCubeIndex = index; // Store the index of the current cube
-      activateCube(cube);  // Activate the cube when new audio starts
-    }).catch(error => {
-      console.error('Audio play failed:', error);
-      window.audioElement.style.display = 'none';
-    });
+
+    setTimeout(() => {
+        window.audioElement.play().then(() => {
+          console.log('Audio is playing.');
+          window.audioElement.style.display = 'block';
+          updateNowPlaying(songIndex, cube.name);
+          playingCube = cube;
+          currentCubeIndex = index; // Store the index of the current cube
+          activateCube(cube);  // Activate the cube when new audio starts
+        }).catch(error => {
+          console.error('Audio play failed:', error);
+          window.audioElement.style.display = 'none';
+        });
+    }, 200);  // 200ms delay
   }
 }
 
@@ -688,5 +692,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.9s');
+console.log('Version 0.0.9t');
 
