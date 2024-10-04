@@ -48,6 +48,7 @@ a:hover {
   font-family: sans-serif;
 }
 #attribution a {
+  color: #a17210;
   text-decoration: none;
   cursor: pointer;
 }

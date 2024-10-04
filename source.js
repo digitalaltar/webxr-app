@@ -84,8 +84,8 @@ function init() {
   
   // Setup camera
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 1, 5);
-  camera.lookAt(new THREE.Vector3(0, 7, 0));  // Ensure the camera is looking straight ahead
+  camera.position.set(0, 0, 3);
+  camera.lookAt(new THREE.Vector3(0, 6, 1));  // Ensure the camera is looking straight ahead
 
   // Setup renderer with WebXR support
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -149,8 +149,8 @@ function loadBackgroundModel() {
   loader.load(modelUrl, (gltf) => {
     const model = gltf.scene;
 
-    model.position.set(0, -3, -13); // Position the model in the background
-    model.scale.set(8, 8, 8); // Scale the model 2x in all directions
+    model.position.set(0, -2, -13); // Position the model in the background
+    model.scale.set(9, 9, 9); // Scale the model 2x in all directions
 
     model.traverse((child) => {
       if (child.isMesh) {
@@ -381,7 +381,7 @@ const cubeMaterial = new THREE.ShaderMaterial({
 function createAlbumCovers(config) {
   const loader = new THREE.TextureLoader();
     const numCubes = config.experiences.length;
-    const radius = 5;  // Adjust the distance of cubes from the user
+    const radius = 7;  // Adjust the distance of cubes from the user
     const arcAngle = Math.PI * 1; // Arc size
 
   // Loop through each experience in the config
@@ -613,7 +613,7 @@ function setupDesktopControls() {
   controls.dampingFactor = 0.1;
   controls.screenSpacePanning = false;  // Prevent panning
   controls.minDistance = 1;  // Set minimum zoom distance
-  controls.maxDistance = 40;  // Set maximum zoom distance
+  controls.maxDistance = 30;  // Set maximum zoom distance
 
 
     // Add mousedown listener for desktop mode
