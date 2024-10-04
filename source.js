@@ -58,6 +58,7 @@ let css3DRenderer;
 let config;
 let currentCubeIndex = 0; // Track the index of the currently playing cube
 let audioContext;
+const radius = 5; 
 
 // Simplex noise for organic movement
 const noise2D = createNoise2D();  // Create the noise generator
@@ -379,7 +380,10 @@ const cubeMaterial = new THREE.ShaderMaterial({
 // Create album covers (cubes) for each experience
 function createAlbumCovers(config) {
   const loader = new THREE.TextureLoader();
-  
+    const numCubes = config.experiences.length;
+    const radius = 5;  // Adjust the distance of cubes from the user
+    const arcAngle = Math.PI * 1; // Arc size
+
   // Loop through each experience in the config
   config.experiences.forEach((experience, index) => {
     const texturePath = `${config.basePath}${experience.folder}/${config.coverFile}`;
@@ -395,18 +399,30 @@ function createAlbumCovers(config) {
       cubeMaterialClone.uniforms.map.value = texture;  // Assign the unique texture to each cube
       
       const cube = new THREE.Mesh(geometry, cubeMaterialClone);
-      
-      // Position each cube with some spacing, and bring closer (Z=-1.5)
-      cube.position.set(-2 + index * 2, 0, 0); // Adjust the spacing and Z position
-      cube.originalPosition = cube.position.clone();  // Store the original position
-      cube.name = experience.name;
+
+        const reverseIndex = numCubes - 1 - index;  // Reverse the index
+
+        // Position the cubes directly in an arc during creation
+        const angle = -(reverseIndex / (numCubes - 0.75)) * arcAngle - (arcAngle / 0.5);  // Symmetric arc
+        const x = radius * Math.cos(angle);
+        const z = radius * Math.sin(angle);
+        const y = 0;  // Keep Y fixed for a horizontal arc
+
+        cube.position.set(x, y, z);
+        cube.lookAt(0, 0, 0);  // Make the cubes face the center (user)
+
+        // Store the original position for later reference if needed
+        cube.originalPosition = cube.position.clone();
+        cube.name = experience.name;
       
       // Add the cube to the scene
       scene.add(cube);
-      
+
       // Push cube into the albumCovers array for interaction and raycasting
       albumCovers.push(cube);
+
     });
+
   });
 }
 
@@ -701,5 +717,5 @@ window.addEventListener('resize', () => {
 // Initialize the scene
 init();
 
-console.log('Version 0.0.11');
+console.log('Version 0.0.12');
 
